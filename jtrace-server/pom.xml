@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.wei</groupId>
+    <artifactId>jtrace</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>jtrace-server</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <name>jtrace-server</name>
+  <url>http://maven.apache.org</url>
+  <dependencies>
+  	<dependency>
+		<groupId>com.github.wei</groupId>
+		<artifactId>jtrace-api</artifactId>
+		<version>${project.parent.version}</version>
+		<scope>provided</scope>
+	</dependency>
+  	<dependency>
+	    <groupId>io.netty</groupId>
+	    <artifactId>netty-codec-http2</artifactId>
+	    <version>4.1.20.Final</version>
+	</dependency>
+<!--   	<dependency> -->
+<!-- 	    <groupId>io.netty</groupId> -->
+<!-- 	    <artifactId>netty-example</artifactId> -->
+<!-- 	    <version>4.1.20.Final</version> -->
+<!-- 	    <scope>provided</scope> -->
+<!-- 	</dependency> -->
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-api</artifactId>
+	</dependency>
+	<dependency>
+	    <groupId>com.google.code.gson</groupId>
+	    <artifactId>gson</artifactId>
+	</dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+    	<groupId>com.github.wei</groupId>
+		<artifactId>jtrace-core</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<scope>test</scope>
+    </dependency>
+  </dependencies>
+  
+  <build>
+        <finalName>jtrace-server</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <encoding>UTF-8</encoding>
+                    <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                        <finalName>jtrace-server</finalName>  
+                    	<appendAssemblyId>false</appendAssemblyId>
+                    	<descriptorRefs>
+                            <descriptorRef>jar-with-dependencies</descriptorRef>
+                        </descriptorRefs>
+                        <archive>
+	                        <manifestEntries>
+		                     	<Bean-Classes>com.github.wei.server.NettyRestServer</Bean-Classes>
+		                     	<Built-At>${maven.build.timestamp}</Built-At>
+	                        </manifestEntries>
+                        </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

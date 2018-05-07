@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.wei</groupId>
+    <artifactId>jtrace</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>jtrace-agent</artifactId>
+  
+  <build>
+  <finalName>jtrace-agent</finalName>
+  	<plugins>
+  	<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <encoding>UTF-8</encoding>
+                    <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                        <finalName>jtrace-agent</finalName>  
+                    	<appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+					            <descriptor>src/assembly/assembly.xml</descriptor>
+					          </descriptors>
+                            <archive>
+                                <manifestEntries>
+                                	<Premain-Class>com.github.wei.jtrace.agent.AgentLauncher</Premain-Class>
+	                            	<Can-Retransform-Classes>true</Can-Retransform-Classes>
+	                            	<Can-Redefine-Classes>true</Can-Redefine-Classes>
+	                            	<Agent-Version>${project.version}</Agent-Version>
+	                            	<Built-At>${maven.build.timestamp}</Built-At>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+  	</plugins>
+  </build>
+ 
+</project>
