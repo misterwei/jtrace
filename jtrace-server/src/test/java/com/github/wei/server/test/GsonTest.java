@@ -35,6 +35,11 @@ public class GsonTest {
 			}
 		})).create();
 		System.out.println(gson.toJson(new ClassTest(String.class)));
+		Exception e = new IllegalAccessException("test");
+		e.getStackTrace();
+		e = new Exception(e);
+		e.getStackTrace();
+		System.out.println(gson.toJson(e));
 	}
 	
 	public static class ClassTest implements Serializable{

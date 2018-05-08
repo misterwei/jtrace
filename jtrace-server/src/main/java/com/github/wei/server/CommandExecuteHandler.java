@@ -107,6 +107,18 @@ public class CommandExecuteHandler extends ChannelInboundHandlerAdapter{
         	result = new CommandFailedResult(command, e.getMessage());
         }
         
+        //异常的堆栈需要显示调用getStackTrace()才可以赋值到stackTrace中
+        Object r = result.getResult();
+        if(r != null && r instanceof Throwable) {
+        	Throwable t = (Throwable)r;
+        	t.getStackTrace();
+        	
+        	while(t.getCause() != null) {
+        		t = t.getCause();
+        		t.getStackTrace();
+        	}
+        }
+        
         Gson gson = gsonBuilder.create();
         
         ByteBuf content = ctx.alloc().buffer();
