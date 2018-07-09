@@ -5,7 +5,11 @@ import org.slf4j.Logger;
 
 import com.github.wei.jtrace.api.beans.IBeanFactory;
 import com.github.wei.jtrace.api.config.IConfigFactory;
+import com.github.wei.jtrace.core.advisor.AdviceManager;
 import com.github.wei.jtrace.core.beans.DefaultBeanFactory;
+import com.github.wei.jtrace.core.clazz.ClassDetailCommand;
+import com.github.wei.jtrace.core.clazz.ClassFinderManager;
+import com.github.wei.jtrace.core.command.ClassLoaderTreeCommand;
 import com.github.wei.jtrace.core.command.CommandExecutorService;
 import com.github.wei.jtrace.core.config.DefaultConfigFactory;
 import com.github.wei.jtrace.core.extension.BeanClassLoaderService;
@@ -15,6 +19,11 @@ import com.github.wei.jtrace.core.logger.RootLogger;
 import com.github.wei.jtrace.core.resource.ResourceSearchService;
 import com.github.wei.jtrace.core.resource.SearchResourceCommand;
 import com.github.wei.jtrace.core.service.ServiceManager;
+import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
+import com.github.wei.jtrace.core.transform.TransformService;
+import com.github.wei.jtrace.core.transform.command.MatchClassCommand;
+import com.github.wei.jtrace.core.transform.command.QueryMatchResultCommand;
+import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
 import com.github.wei.jtrace.core.util.AgentHelper;
 
 public class BaseTest {
@@ -37,10 +46,27 @@ public class BaseTest {
 	}
 	
 	protected void initBeanFactory(IBeanFactory beanFactory) throws Exception{
+		beanFactory.registBean(CommandExecutorService.class);
+		beanFactory.registBean(ResourceSearchService.class);
+		beanFactory.registBean(ClassFinderManager.class);
+		beanFactory.registBean(TransformService.class);
+		beanFactory.registBean(MatchAndRestoreService.class);
+		
+		//class and classloader
+		beanFactory.registBean(SearchResourceCommand.class);
+		beanFactory.registBean(ClassDetailCommand.class);
+		beanFactory.registBean(ClassLoaderTreeCommand.class);
+		
+		//match and weave
+		beanFactory.registBean(MatchClassCommand.class);
+		beanFactory.registBean(RestoreClassCommand.class);
+		beanFactory.registBean(QueryMatchResultCommand.class);
+		
+		//advice
+		beanFactory.registBean(AdviceManager.class);
+		
+		//扩展服务
 		beanFactory.registBean(ExtensionService.class);
 		beanFactory.registBean(BeanClassLoaderService.class);
-		beanFactory.registBean(ResourceSearchService.class);
-		beanFactory.registBean(CommandExecutorService.class);
-		beanFactory.registBean(SearchResourceCommand.class);
 	}
 }

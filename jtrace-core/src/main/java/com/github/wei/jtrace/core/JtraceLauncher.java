@@ -22,14 +22,16 @@ import com.github.wei.jtrace.core.extension.BeanClassLoaderService;
 import com.github.wei.jtrace.core.extension.ExtensionService;
 import com.github.wei.jtrace.core.logger.LoggerConfiger;
 import com.github.wei.jtrace.core.logger.RootLogger;
-import com.github.wei.jtrace.core.matchers.MatchAndRestoreService;
-import com.github.wei.jtrace.core.matchers.MatchAndTransformService;
-import com.github.wei.jtrace.core.matchers.MatchClassCommand;
-import com.github.wei.jtrace.core.matchers.QueryMatchResultCommand;
-import com.github.wei.jtrace.core.matchers.RestoreClassCommand;
 import com.github.wei.jtrace.core.resource.ResourceSearchService;
 import com.github.wei.jtrace.core.resource.SearchResourceCommand;
 import com.github.wei.jtrace.core.service.ServiceManager;
+import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
+import com.github.wei.jtrace.core.transform.TransformService;
+import com.github.wei.jtrace.core.transform.command.MatchClassCommand;
+import com.github.wei.jtrace.core.transform.command.QueryMatchResultCommand;
+import com.github.wei.jtrace.core.transform.command.RemoveTransformerCommand;
+import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
+import com.github.wei.jtrace.core.transform.command.ShowAllTransformerCommand;
 import com.github.wei.jtrace.core.util.AgentHelper;
 
 public class JtraceLauncher {
@@ -74,7 +76,7 @@ public class JtraceLauncher {
 		beanFactory.registBean(CommandExecutorService.class);
 		beanFactory.registBean(ResourceSearchService.class);
 		beanFactory.registBean(ClassFinderManager.class);
-		beanFactory.registBean(MatchAndTransformService.class);
+		beanFactory.registBean(TransformService.class);
 		beanFactory.registBean(MatchAndRestoreService.class);
 		
 		//class and classloader
@@ -86,6 +88,8 @@ public class JtraceLauncher {
 		beanFactory.registBean(MatchClassCommand.class);
 		beanFactory.registBean(RestoreClassCommand.class);
 		beanFactory.registBean(QueryMatchResultCommand.class);
+		beanFactory.registBean(ShowAllTransformerCommand.class);
+		beanFactory.registBean(RemoveTransformerCommand.class);
 		
 		//advice
 		beanFactory.registBean(AdviceManager.class);

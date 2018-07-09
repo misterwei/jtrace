@@ -6,7 +6,5 @@ import com.github.wei.jtrace.api.exception.ClassMatchException;
 public interface IClassMatcher {
 
 	boolean matchClass(IClassDescriberTree descr) throws ClassMatchException;
-	
-	boolean isMatchSubClass();
-	
+		
 }

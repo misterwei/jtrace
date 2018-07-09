@@ -75,9 +75,14 @@ public class ClazzUtil {
 		
 		classInfo.setClassDescriber(descr);
 		
-		final List<MethodDescriber> methods = new ArrayList<MethodDescriber>();
-		classInfo.setMethods(methods);
+		classInfo.setMethods(extractMethodDescribers(classReader));
 		
+		return classInfo;
+	}
+	
+	public static List<MethodDescriber> extractMethodDescribers(ClassReader classReader){
+		final List<MethodDescriber> methods = new ArrayList<MethodDescriber>();
+
 		classReader.accept(new ClassVisitor(Opcodes.ASM5) {
 			@Override
 			public MethodVisitor visitMethod(int access, String name, String desc, String signature,
@@ -86,9 +91,9 @@ public class ClazzUtil {
 				methods.add(methodInfo);
 				return super.visitMethod(access, name, desc, signature, exceptions);
 			}
-		}, 0);	
-	
-		return classInfo;
+		}, ClassReader.EXPAND_FRAMES);	
+		
+		return methods;
 	}
 	
 	/**

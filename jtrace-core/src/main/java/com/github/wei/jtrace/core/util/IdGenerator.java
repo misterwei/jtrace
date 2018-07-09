@@ -19,9 +19,9 @@ public class IdGenerator {
 	
 	public int next() {
 		int id = counter.getAndIncrement();
-		if(id + START > MAX_COUNT) {
+		if(id + 1 > MAX_COUNT) {
 			synchronized (counter) {
-				if(counter.get() + START> MAX_COUNT) {
+				if(counter.get() + 1> MAX_COUNT) {
 					counter.set(START);
 				}
 				return counter.getAndIncrement();

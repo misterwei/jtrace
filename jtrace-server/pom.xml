@@ -48,6 +48,12 @@
 		<version>0.0.1-SNAPSHOT</version>
 		<scope>test</scope>
     </dependency>
+    <dependency>
+    	<groupId>com.github.wei</groupId>
+		<artifactId>jtrace-agent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<scope>test</scope>
+    </dependency>
   </dependencies>
   
   <build>

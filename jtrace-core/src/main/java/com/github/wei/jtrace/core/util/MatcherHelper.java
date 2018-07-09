@@ -8,10 +8,10 @@ import com.github.wei.jtrace.api.matcher.BaseClassMatcher;
 import com.github.wei.jtrace.api.matcher.ExtractClassMatcher;
 import com.github.wei.jtrace.api.matcher.IClassMatcher;
 import com.github.wei.jtrace.api.matcher.InterfaceClassMatcher;
-import com.github.wei.jtrace.core.matchers.IMethodMatcher;
-import com.github.wei.jtrace.core.matchers.MethodArgumentMatcher;
-import com.github.wei.jtrace.core.matchers.MethodExtractMatcher;
-import com.github.wei.jtrace.core.matchers.MethodNameMatcher;
+import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodArgumentMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodExtractMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodNameMatcher;
 import com.google.common.base.Splitter;
 
 public class MatcherHelper {

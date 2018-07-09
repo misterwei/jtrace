@@ -1,4 +1,4 @@
-package com.github.wei.jtrace.core.matchers;
+package com.github.wei.jtrace.core.transform;
 
 import java.lang.instrument.Instrumentation;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -24,7 +24,7 @@ public class MatchAndRestoreService implements IAsyncService{
 	private Instrumentation inst;
 	
 	@AutoRef
-	private MatchAndTransformService matchAndTransformService;
+	private TransformService matchAndTransformService;
 	
 	private LinkedBlockingQueue<IClassMatcher> matcherQueue = new LinkedBlockingQueue<IClassMatcher>();
 

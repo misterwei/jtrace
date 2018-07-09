@@ -1,4 +1,4 @@
-package com.github.wei.jtrace.core.matchers;
+package com.github.wei.jtrace.core.transform;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -6,11 +6,12 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.objectweb.asm.ClassReader;
@@ -26,19 +27,18 @@ import com.github.wei.jtrace.api.clazz.IClassFinder;
 import com.github.wei.jtrace.api.clazz.IClassFinderManager;
 import com.github.wei.jtrace.api.config.IConfig;
 import com.github.wei.jtrace.api.exception.ClassFinderException;
-import com.github.wei.jtrace.api.exception.ClassMatchException;
-import com.github.wei.jtrace.api.matcher.IMatcherAndTransformer;
+import com.github.wei.jtrace.api.matcher.ITransformer;
 import com.github.wei.jtrace.api.service.IAsyncService;
 import com.github.wei.jtrace.core.util.AgentHelper;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 import com.github.wei.jtrace.core.util.IdGenerator;
 
 @Bean
-public class MatchAndTransformService implements IAsyncService{
+public class TransformService implements IAsyncService{
 
-	Logger log = LoggerFactory.getLogger("MatchAndTransformService");
+	Logger log = LoggerFactory.getLogger("TransformService");
 	
-	public static final int ID_MAX_VALUE = 1000;
+	public static final int ID_MAX_VALUE = Integer.MAX_VALUE;
 	
 	@BeanRef(name="instrumentation")
 	private Instrumentation inst;
@@ -53,9 +53,9 @@ public class MatchAndTransformService implements IAsyncService{
 		return "transformer";
 	}
 
-	private LinkedBlockingQueue<Integer> matcherQueue = new LinkedBlockingQueue<Integer>();
+	private LinkedBlockingQueue<ITransformer> matcherQueue = new LinkedBlockingQueue<ITransformer>();
 		
-	private Map<Integer, IMatcherAndTransformer > matchedClassesAndResult = Collections.synchronizedMap(new HashMap<Integer, IMatcherAndTransformer >());
+	private ConcurrentHashMap<Integer, ITransformer > transformers = new ConcurrentHashMap<Integer, ITransformer >();
 		
 	private boolean classout = false;
 	private volatile boolean running = false;
@@ -85,15 +85,11 @@ public class MatchAndTransformService implements IAsyncService{
 	 * @return
 	 * @throws IllegalAccessException 
 	 */
-	public synchronized int registTransformer(IMatcherAndTransformer matcherAndResult, boolean refresh) throws IllegalAccessException {
+	public int registTransformer(ITransformer matcherAndResult, boolean refresh) throws IllegalAccessException {
 		int id = idGenerator.next();
 		
-		int i = 0;
-		while(!registTransformer(id, matcherAndResult, refresh)) {
-			i++;
-			if(i >= ID_MAX_VALUE) {
-				throw new IllegalAccessException("no ID sequence space");
-			}
+		if(!registTransformer(id, matcherAndResult, refresh)) {
+			throw new IllegalAccessException("no ID sequence space");
 		}
 		
 		return id;
@@ -105,50 +101,77 @@ public class MatchAndTransformService implements IAsyncService{
 	 * @param addToQueue 
 	 * @return 如果id已经存在，返回false
 	 */
-	private boolean registTransformer(int id, IMatcherAndTransformer matcherAndResult, boolean refresh) {
-		if(matchedClassesAndResult.containsKey(id)) {
+	private boolean registTransformer(int id, ITransformer matcherAndResult, boolean refresh) {
+		if(transformers.containsKey(id)) {
 			return false;
 		}
-		matchedClassesAndResult.put(id, matcherAndResult);
+		transformers.put(id, matcherAndResult);
 		if(refresh) {
-			matcherQueue.add(id);
+			refreshTransformer(matcherAndResult);
 		}
 		return true;
 	}
 	
 	public synchronized void removeTransformerByMatched(IClassDescriberTree classTree) {
-		Set<Integer> ids = matchedClassesAndResult.keySet();
+		Set<Integer> ids = transformers.keySet();
 		Iterator<Integer> it = ids.iterator();
 		while(it.hasNext()) {
-			IMatcherAndTransformer matcher = matchedClassesAndResult.get(it.next());
-			try {
-				if(matcher.matchClass(classTree)) {
-					it.remove();
-				}
-			}catch(ClassMatchException e) {
-				log.debug("Match class ["+classTree.getClassDescriber()+"] failed", e);
+			ITransformer matcher = transformers.get(it.next());
+			if(matcher != null && matcher.needRetransform(classTree)) {
+				it.remove();
+				refreshTransformer(matcher);
 			}
 		}
+	}
+	
+	public void removeTransformerById(int id) {
+		ITransformer transformer = transformers.remove(id);
+		if(transformer != null) {
+			refreshTransformer(transformer);
+		}
+	}
+	
+	public void removeTransformer(ITransformer transformer) {
+		Set<Integer> ids = transformers.keySet();
+		Iterator<Integer> it = ids.iterator();
+		while(it.hasNext()) {
+			ITransformer matcher = transformers.get(it.next());
+			if(matcher != null && matcher.equals(transformer)) {
+				it.remove();
+				refreshTransformer(transformer);
+			}
+		}
+	}
+	
+	//刷新Transformer，重新嵌码
+	public boolean refreshTransformerById(int id) {
+		ITransformer  transformer = transformers.get(id);
+		if(transformer == null) {
+			return false;
+		}
 		
+		return refreshTransformer(transformer);
 	}
 	
-	public synchronized void removeTransformerById(int id) {
-		matchedClassesAndResult.remove(id);
-	}
-	
-	
-	//刷新ClassMatcher，重新适配
-	public synchronized boolean refreshTransformer(int id) {
-		if(matchedClassesAndResult.containsKey(id)) {
-			matcherQueue.add(id);
+	//刷新Transformer，重新嵌码
+	public boolean refreshTransformer(ITransformer transformer) {
+		if(transformer != null) {
+			matcherQueue.add(transformer);
 			return true;
 		}
 		return false;
 	}
 	
 	//获取适配的Class
-	public IMatcherAndTransformer getTransformer(int id){
-		return matchedClassesAndResult.get(id);
+	public ITransformer getTransformer(int id){
+		return transformers.get(id);
+	}
+	
+	public List<Integer> getRegistedTransformerIds(){	
+		Set<Integer> keys = transformers.keySet();
+		List<Integer> result = new ArrayList<Integer>(keys);
+		Collections.sort(result);
+		return result;
 	}
 	
 	public IClassDescriberTree findClassDescriberTree(String className){
@@ -165,9 +188,8 @@ public class MatchAndTransformService implements IAsyncService{
 	public void run() {
 		try {
 			while(running){
-				Integer matcherAndTransformerId = matcherQueue.take();
-				IMatcherAndTransformer matcherAndTransformer = matchedClassesAndResult.get(matcherAndTransformerId);
-				if(matcherAndTransformer == null) {
+				ITransformer transformer = matcherQueue.take();
+				if(transformer == null) {
 					continue;
 				}
 				
@@ -182,7 +204,7 @@ public class MatchAndTransformService implements IAsyncService{
 							continue;
 						}
 						try {
-							if(matcherAndTransformer.matchClass(new ClassDescriberTreeFromClass(clazz))){
+							if(transformer.needRetransform(new ClassDescriberTreeFromClass(clazz))){
 								found = true;
 								try {
 									if(inst.isModifiableClass(clazz)) {
@@ -203,8 +225,7 @@ public class MatchAndTransformService implements IAsyncService{
 					}
 					
 					if(!found) {
-						//delayClassMatcherTimer.addMatcherAndTransformer(matcherAndTransformer);
-						log.warn("MatcherAndTransformer {} not found matched classes", matcherAndTransformerId);
+						log.warn("Transformer {} not found matched classes", transformer);
 					}
 				}
 			}
@@ -228,32 +249,35 @@ public class MatchAndTransformService implements IAsyncService{
 				return null;
 			}
 			
-			ClassReader cr = new ClassReader(classfileBuffer);
-			ClassDescriber descr = ClazzUtil.extractClassDescriber(cr);
-			
 			byte[] tempClassfileBuffer = classfileBuffer;
-			Set<Integer> ids = matchedClassesAndResult.keySet();
-			for(Integer id : ids) {
-				final IMatcherAndTransformer matcherAndResult = matchedClassesAndResult.get(id);
-				if(matcherAndResult == null) {
-					continue;
-				}
+			
+			try {
+				ClassReader cr = new ClassReader(classfileBuffer);
+				ClassDescriber descr = ClazzUtil.extractClassDescriber(cr);
 				
-				try {
-					IClassFinder classFinder = classFinderManager.getClassFinder(loader);
-					if(matcherAndResult.matchClass(new ClassDescriberTreeFromClassFinder(classFinder, descr))) {
-						byte[] bytes  = matcherAndResult.transform(loader, className, classBeingRedefined, protectionDomain, tempClassfileBuffer);
+				IClassFinder classFinder = classFinderManager.getClassFinder(loader);
+				IClassDescriberTree classTree = new ClassDescriberTreeFromClassFinder(classFinder, descr);
+				
+				Set<Integer> ids = transformers.keySet();
+				for(Integer id : ids) {
+					final ITransformer transformer = transformers.get(id);
+					if(transformer == null) {
+						continue;
+					}
+					
+					try {
+						byte[] bytes  = transformer.transform(loader, classTree, classBeingRedefined, protectionDomain, tempClassfileBuffer);
 						if(bytes != null) {
 							tempClassfileBuffer = bytes;
 						}
+					}catch(Exception e) {
+						log.error("Transform class ["+descr+"] failed", e);
 					}
-				}catch(ClassMatchException e) {
-					log.debug("Match class ["+descr+"] failed", e);
-				}catch(ClassFinderException e) {
-					log.debug("Get classfinder for "+loader+" failed", e);
-				}catch(Exception e) {
-					log.error("Match transform class ["+descr+"] failed", e);
 				}
+			}catch(ClassFinderException e) {
+				log.debug("Get classfinder for "+loader+" failed", e);
+			}catch(Exception e) {
+				log.error("Transform class ["+className+"] failed", e);
 			}
 			
 			if(tempClassfileBuffer != classfileBuffer) {

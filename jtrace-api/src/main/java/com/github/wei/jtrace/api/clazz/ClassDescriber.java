@@ -30,7 +30,9 @@ public class ClassDescriber {
 
 	@Override
 	public String toString() {
-		return modifier + " " + name;
+		StringBuilder sb = new StringBuilder("ClassDescriber[");
+		sb.append(modifier).append(" ").append(name).append("]");
+		return sb.toString();
 	}
 	
 	@Override

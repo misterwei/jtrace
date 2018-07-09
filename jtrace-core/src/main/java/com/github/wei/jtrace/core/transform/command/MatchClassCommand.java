@@ -1,4 +1,4 @@
-package com.github.wei.jtrace.core.matchers;
+package com.github.wei.jtrace.core.transform.command;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -6,13 +6,16 @@ import java.util.HashMap;
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.matcher.IMatcherAndTransformer;
+import com.github.wei.jtrace.api.matcher.ITransformer;
+import com.github.wei.jtrace.core.transform.ClassMatcherAndResult;
+import com.github.wei.jtrace.core.transform.TransformService;
+import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
 
 @Bean
 public class MatchClassCommand extends AbstractClassMatchCommand{
 
 	@AutoRef
-	private MatchAndTransformService advisorWeaveService;
+	private TransformService advisorWeaveService;
 	
 	@Override
 	public String name() {
@@ -22,7 +25,7 @@ public class MatchClassCommand extends AbstractClassMatchCommand{
 	@Override
 	protected Serializable doMatch(IClassMatcher classMatcher, IMethodMatcher... matchers) throws Exception{
 		
-		IMatcherAndTransformer matcherAndTransformer = null;
+		ITransformer matcherAndTransformer = null;
 		if(matchers == null) {
 			matcherAndTransformer =	new ClassMatcherAndResult(classMatcher);
 		}else {

@@ -1,4 +1,4 @@
-package com.github.wei.jtrace.core.matchers;
+package com.github.wei.jtrace.core.transform.command;
 
 import java.io.Serializable;
 
@@ -10,6 +10,7 @@ import com.github.wei.jtrace.api.matcher.BaseClassMatcher;
 import com.github.wei.jtrace.api.matcher.ExtractClassMatcher;
 import com.github.wei.jtrace.api.matcher.IClassMatcher;
 import com.github.wei.jtrace.api.matcher.InterfaceClassMatcher;
+import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
 
 @Bean
 public class RestoreClassCommand implements ICommand{
@@ -19,7 +20,7 @@ public class RestoreClassCommand implements ICommand{
 	
 	@Override
 	public String name() {
-		return "restore";
+		return "restoreClass";
 	}
 
 	@Override

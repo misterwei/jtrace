@@ -7,9 +7,9 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import com.github.wei.jtrace.core.clazz.MethodDescriber;
-import com.github.wei.jtrace.core.matchers.MethodExtractMatcher;
-import com.github.wei.jtrace.core.matchers.IMethodMatcher;
 import com.github.wei.jtrace.core.test.BaseTest;
+import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodExtractMatcher;
 
 public class MethodExtractMatcherTest  extends BaseTest{
 

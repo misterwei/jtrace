@@ -1,4 +1,4 @@
-package com.github.wei.jtrace.core.matchers;
+package com.github.wei.jtrace.core.transform.command;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -10,13 +10,15 @@ import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.command.Argument;
 import com.github.wei.jtrace.api.command.ICommand;
-import com.github.wei.jtrace.api.matcher.IMatcherAndTransformer;
+import com.github.wei.jtrace.api.matcher.ITransformer;
+import com.github.wei.jtrace.core.transform.TransformService;
+import com.github.wei.jtrace.core.transform.matchers.IQueryMatchResult;
 
 @Bean
 public class QueryMatchResultCommand implements ICommand{
 
 	@AutoRef
-	private MatchAndTransformService advisorWeaveService;
+	private TransformService advisorWeaveService;
 	
 	@Override
 	public String name() {
@@ -26,7 +28,7 @@ public class QueryMatchResultCommand implements ICommand{
 	@Override
 	public Serializable execute(Object... args) throws Exception {
 		int id = Integer.parseInt(String.valueOf(args[0]));
-		IMatcherAndTransformer matcherAndTransformer = advisorWeaveService.getTransformer(id);
+		ITransformer matcherAndTransformer = advisorWeaveService.getTransformer(id);
 		if(matcherAndTransformer == null) {
 			throw new Exception("MatcherAndTransformer "+id+" not found");
 		}

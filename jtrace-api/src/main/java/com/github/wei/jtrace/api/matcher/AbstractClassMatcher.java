@@ -2,8 +2,8 @@ package com.github.wei.jtrace.api.matcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
@@ -11,10 +11,12 @@ import com.github.wei.jtrace.api.exception.ClassMatchException;
 
 public abstract class AbstractClassMatcher implements IClassMatcher{
 	
-	private List<String> matchedClasses = new LinkedList<String>();
-	private List<String> noMatchedClasses = new LinkedList<String>();
+	private List<String> matchedClasses = new CopyOnWriteArrayList<String>();
+	private List<String> noMatchedClasses = new CopyOnWriteArrayList<String>();
 	
-	private synchronized Boolean innerMatchResult(String className){
+	public abstract  boolean isMatchSubClass();
+	
+	private Boolean innerMatchResult(String className){
 		if(matchedClasses.contains(className)) {
 			return true;
 		}
@@ -24,7 +26,7 @@ public abstract class AbstractClassMatcher implements IClassMatcher{
 		return null;
 	}
 	
-	private void storeMatchedClasses(List<String> classes) {
+	private synchronized void storeMatchedClasses(List<String> classes) {
 		for(String clazz : classes) {
 			storeMatchedClass(clazz);
 		}
@@ -42,7 +44,7 @@ public abstract class AbstractClassMatcher implements IClassMatcher{
 		matchedClasses.add(clazz);
 	}
 	
-	private void storeNoMatchedClasses(List<String> classes) {
+	private synchronized void storeNoMatchedClasses(List<String> classes) {
 		for(String clazz : classes) {
 			storeNoMatchedClass(clazz);
 		}

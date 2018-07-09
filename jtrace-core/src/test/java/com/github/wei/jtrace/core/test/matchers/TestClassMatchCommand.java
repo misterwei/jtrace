@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.core.matchers.AbstractClassMatchCommand;
-import com.github.wei.jtrace.core.matchers.IMethodMatcher;
+import com.github.wei.jtrace.core.transform.command.AbstractClassMatchCommand;
+import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
 
 @Bean
 public class TestClassMatchCommand extends AbstractClassMatchCommand{

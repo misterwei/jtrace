@@ -16,6 +16,6 @@ public class NettyRestServerTest extends BaseTest{
 	
 	@Test
 	public void testRun() throws Exception{
-		Thread.sleep(5000);
+		Thread.sleep(3000);
 	}
 }

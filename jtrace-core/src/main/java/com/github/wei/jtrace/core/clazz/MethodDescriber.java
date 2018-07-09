@@ -100,5 +100,10 @@ public class MethodDescriber implements Serializable {
 		return true;
 	}
 
-	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder("MethodDescriber[");
+		sb.append(modifier).append(" ").append(name).append(descriptor).append("]");
+		return sb.toString();
+	}
 }
