@@ -23,9 +23,10 @@ public class TimeCountCommand implements ICommand{
 	public Serializable execute(Object... args) throws Exception {
 		String className = String.valueOf(args[0]);
 		String method = String.valueOf(args[1]);
+		Integer times = (Integer)args[2];
 		
 		AdviceConfig config = new AdviceConfig(className, method);
-		int id = adviceService.registAdviceListener(config, new TimeCountAdviceListenerManager(), false);
+		int id = adviceService.registAdviceListener(config, new TimeCountAdviceListenerManager(times), false);
 		
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);
@@ -39,6 +40,7 @@ public class TimeCountCommand implements ICommand{
 	public Argument[] args() {
 		return new Argument[]{new Argument("class", "类名，需要全路径", true, String.class),
 				new Argument("method", "方法描述，支持1.方法名适配：method, 2.指定参数个数的方法：method(2), 3.精确适配：method(Ljava/lang/String)V ", true, String.class),
+				new Argument("times", "采集次数", Integer.class, 20)
 				};
 	}
 

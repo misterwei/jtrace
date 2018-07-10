@@ -11,8 +11,13 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 	private volatile long min = Integer.MAX_VALUE;
 	private volatile long total = 0;
 	
+	private final int times;
 	private List<Long> values = new CopyOnWriteArrayList<Long>();
 
+	public TimeCountAdviceListenerManager(int times) {
+		this.times = times;
+	}
+	
 	public TimeCount computeTimeCount(){
 		long count = values.size();
 		long total = this.total;
@@ -26,6 +31,10 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 	}
 	
 	private synchronized void addValue(long time){
+		if(values.size() >= times) {
+			return;
+		}
+		
 		if(time > max) {
 			max = time;
 		}

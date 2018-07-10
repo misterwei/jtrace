@@ -25,9 +25,10 @@ public class WatchValueCommand implements ICommand{
 		String method = String.valueOf(args[1]);
 		String pos = String.valueOf(args[2]);
 		String expr = String.valueOf(args[3]);
+		Integer times = (Integer)args[4];
 		
 		AdviceConfig config = new AdviceConfig(className, method);
-		int id = adviceService.registAdviceListener(config, new WatchValueAdviceListenerManager(pos, expr), false);
+		int id = adviceService.registAdviceListener(config, new WatchValueAdviceListenerManager(pos, expr, times), false);
 		
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);
@@ -42,7 +43,8 @@ public class WatchValueCommand implements ICommand{
 		return new Argument[]{new Argument("class", "类名，需要全路径", true, String.class),
 				new Argument("method", "方法描述，支持1.方法名适配：method, 2.指定参数个数的方法：method(2), 3.精确适配：method(Ljava/lang/String)V 。多个方法用逗号隔开", true, String.class),
 				new Argument("pos", "观察位置，支持1.开始：begin, 2.返回：return, 3.异常：throw", true, String.class),
-				new Argument("expr", "OGNL表达式", true, String.class)
+				new Argument("expr", "OGNL表达式", true, String.class),
+				new Argument("times", "采集次数", Integer.class, 20)
 				};
 	}
 

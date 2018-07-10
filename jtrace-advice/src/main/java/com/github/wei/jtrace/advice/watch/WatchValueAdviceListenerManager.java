@@ -13,6 +13,7 @@ import ognl.OgnlContext;
 public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 	private final String pos;
 	private final String expr;
+	private final int times;
 	
 	private List<Object> values = new CopyOnWriteArrayList<Object>();
 	
@@ -22,9 +23,10 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 		};
 	};
 	
-	public WatchValueAdviceListenerManager(String pos, String expr) {
+	public WatchValueAdviceListenerManager(String pos, String expr, int times) {
 		this.pos = pos;
 		this.expr = expr;
+		this.times = times;
 	}
 	
 	public List<Object> getResult(){
@@ -32,6 +34,10 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 	}
 	
 	private void addValue(Object obj){
+		if(values.size() >= times) {
+			return;
+		}
+		
 		Object result = null;
 		try {
 			result = Ognl.getValue(expr, ognlContext.get(), obj);
