@@ -1,6 +1,7 @@
 package com.github.wei.jtrace.core.transform.matchers;
 
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.util.StringUtil;
 
 public class MethodArgumentMatcher implements IMethodMatcher{

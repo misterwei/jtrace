@@ -1,4 +1,4 @@
-package com.github.wei.jtrace.api.matcher;
+package com.github.wei.jtrace.core.transform.matchers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
 
 public abstract class AbstractClassMatcher implements IClassMatcher{
 	

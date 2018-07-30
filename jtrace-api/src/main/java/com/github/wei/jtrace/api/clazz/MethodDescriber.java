@@ -1,11 +1,7 @@
-package com.github.wei.jtrace.core.clazz;
+package com.github.wei.jtrace.api.clazz;
 
 import java.io.Serializable;
 import java.util.Arrays;
-
-import org.objectweb.asm.Type;
-
-import com.github.wei.jtrace.core.util.ModifierUtil;
 
 public class MethodDescriber implements Serializable {
 	
@@ -20,21 +16,12 @@ public class MethodDescriber implements Serializable {
 	
 	private String descriptor;
 	
-	public MethodDescriber(String name, String desc, int access) {
-		this.access = access;
+	public MethodDescriber(String name, String modifier, String[] argumentTypes, String returnType, String descriptor) {
 		this.name = name;
-		this.descriptor = desc;
-		
-		desc = desc.replace('.', '/');
-		Type[] types = Type.getArgumentTypes(desc);
-		if(types != null) {
-			argumentTypes = new String[types.length]; 
-			for(int i=0;i< types.length;i++) {
-				argumentTypes[i] = types[i].getClassName().replace('.', '/');
-			}
-		}
-		this.returnType = Type.getReturnType(desc).getClassName().replace('.', '/');
-		this.modifier = ModifierUtil.toString(access);
+		this.modifier = modifier;
+		this.argumentTypes = argumentTypes;
+		this.returnType = returnType;
+		this.descriptor = descriptor;
 	}
 	
 	public int getAccess() {

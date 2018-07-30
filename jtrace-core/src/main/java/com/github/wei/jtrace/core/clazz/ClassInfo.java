@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
 
 public class ClassInfo implements Serializable, Cloneable {
 

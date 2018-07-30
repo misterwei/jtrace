@@ -3,6 +3,8 @@ package com.github.wei.jtrace.advice.time;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.github.wei.jtrace.api.advice.AdviceMatcher;
+import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
 
@@ -11,10 +13,14 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 	private volatile long min = Integer.MAX_VALUE;
 	private volatile long total = 0;
 	
+	private String className;
+	private String method;
 	private final int times;
 	private List<Long> values = new CopyOnWriteArrayList<Long>();
 
-	public TimeCountAdviceListenerManager(int times) {
+	public TimeCountAdviceListenerManager(String className, String method, int times) {
+		this.className = className;
+		this.method = method;
 		this.times = times;
 	}
 	
@@ -47,6 +53,12 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 
 	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr) {
 		return new AdviceListener();
+	}
+	
+	@Override
+	public void init(IAdviceController controller) {
+		controller.addMatcher(AdviceMatcher.newBuilder(className).addMethod(method).build());
+		controller.refresh();
 	}
 	
 	private class AdviceListener implements IAdviceListener{

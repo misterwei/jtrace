@@ -15,14 +15,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.core.transform.AbstractMatcherAndTransformer;
+import com.github.wei.jtrace.core.transform.IMatchedListener;
 
 public class AdvisorTransformer extends AbstractMatcherAndTransformer implements Opcodes{
 	static Logger logger = LoggerFactory.getLogger("AdvisorTransformer");
 	private boolean trace;
 	
-	private List<IAdvisorMatchedListener> listeners = new CopyOnWriteArrayList<IAdvisorMatchedListener>(); 
+	private List<IMatchedListener> listeners = new CopyOnWriteArrayList<IMatchedListener>(); 
 
 	
 	public AdvisorTransformer(boolean trace) {
@@ -82,12 +83,12 @@ public class AdvisorTransformer extends AbstractMatcherAndTransformer implements
 	}
 	
 	protected void notifyListeners(String className, String method, String desc) {
-		for(IAdvisorMatchedListener listener : listeners) {
+		for(IMatchedListener listener : listeners) {
 			listener.matched(className, method, desc);
 		}
 	}
 	
-	public void addAdvisorMatchedListener(IAdvisorMatchedListener listener) {
+	public void addAdvisorMatchedListener(IMatchedListener listener) {
 		listeners.add(listener);
 	}
 	

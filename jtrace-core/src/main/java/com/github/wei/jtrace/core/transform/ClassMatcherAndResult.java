@@ -18,12 +18,13 @@ import org.slf4j.LoggerFactory;
 
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.matcher.ITransformer;
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.api.transform.ITransformer;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.transform.matchers.IQueryMatchResult;
+import com.github.wei.jtrace.core.util.ClazzUtil;
 
 public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
 	private static Logger log = LoggerFactory.getLogger("ClassMatcherAndResult");
@@ -43,13 +44,8 @@ public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
 	}
 	
 	@Override
-	public boolean needRetransform(IClassDescriberTree descr)  {
-		try {
-			return classMatcher.matchClass(descr);
-		}catch(ClassMatchException e) {
-			log.error("Match class " + descr.getClassDescriber().getName() + " failed", e);
-			return false;
-		}
+	public boolean matchClass(IClassDescriberTree descr) throws ClassMatchException {
+		return classMatcher.matchClass(descr);
 	}
 
 	@Override
@@ -80,7 +76,7 @@ public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
 			cr.accept(new ClassVisitor(Opcodes.ASM5) {
 				
 				public org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-					MethodDescriber methodDescr = new MethodDescriber(name, desc, access);
+					MethodDescriber methodDescr = ClazzUtil.extractMethodDescriber(access, name, desc);
 					matchMethod(methodDescr, matchedMatchers, matchedMethods);
 					
 					return super.visitMethod(access, name, desc, signature, exceptions);

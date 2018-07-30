@@ -1,11 +1,12 @@
 package com.github.wei.jtrace.core.transform.command;
 
 import java.io.Serializable;
+import java.util.List;
 
 import com.github.wei.jtrace.api.command.Argument;
 import com.github.wei.jtrace.api.command.ICommand;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.util.MatcherHelper;
 
 public abstract class AbstractClassMatchCommand implements ICommand{
@@ -18,8 +19,8 @@ public abstract class AbstractClassMatchCommand implements ICommand{
 		IClassMatcher classMatcher = MatcherHelper.extractClassMatcher(className, matchType);
 		
 		if(args[1] != null) {
-			IMethodMatcher[] methodMatchers = MatcherHelper.extractMethodMatchers(String.valueOf(args[1]));
-			return doMatch(classMatcher, methodMatchers);
+			List<IMethodMatcher> methodMatchers = MatcherHelper.extractMethodMatchers(String.valueOf(args[1]));
+			return doMatch(classMatcher, methodMatchers.toArray(new IMethodMatcher[methodMatchers.size()]));
 		}
 		
 		return doMatch(classMatcher);

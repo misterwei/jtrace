@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import com.github.wei.jtrace.advice.AdviceService;
-import com.github.wei.jtrace.api.advice.AdviceConfig;
+import com.github.wei.jtrace.api.advice.AdviceMatcher;
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.command.Argument;
@@ -27,8 +27,8 @@ public class WatchValueCommand implements ICommand{
 		String expr = String.valueOf(args[3]);
 		Integer times = (Integer)args[4];
 		
-		AdviceConfig config = new AdviceConfig(className, method);
-		int id = adviceService.registAdviceListener(config, new WatchValueAdviceListenerManager(pos, expr, times), false);
+		AdviceMatcher matcher = AdviceMatcher.newBuilder(className).addMethod(method).build();
+		int id = adviceService.registAdviceListener(new WatchValueAdviceListenerManager(matcher, pos, expr, times), false);
 		
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);

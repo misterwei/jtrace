@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.wei.jtrace.advice.ognl.OgnlMemberAccess;
+import com.github.wei.jtrace.api.advice.AdviceMatcher;
+import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
 
@@ -14,6 +16,7 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 	private final String pos;
 	private final String expr;
 	private final int times;
+	private final AdviceMatcher matcher;
 	
 	private List<Object> values = new CopyOnWriteArrayList<Object>();
 	
@@ -23,10 +26,11 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 		};
 	};
 	
-	public WatchValueAdviceListenerManager(String pos, String expr, int times) {
+	public WatchValueAdviceListenerManager(AdviceMatcher matcher, String pos, String expr, int times) {
 		this.pos = pos;
 		this.expr = expr;
 		this.times = times;
+		this.matcher = matcher;
 	}
 	
 	public List<Object> getResult(){
@@ -75,6 +79,12 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 		public void onInvoke(Integer lineNumber, String own, String name, String desc, boolean itf) {
 			
 		}
+	}
+
+	@Override
+	public void init(IAdviceController controller) {
+		controller.addMatcher(matcher);
+		controller.refresh();
 	}
 
 }

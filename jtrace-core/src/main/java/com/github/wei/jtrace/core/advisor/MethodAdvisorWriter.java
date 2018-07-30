@@ -30,7 +30,8 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 	protected final Type TYPE_THROWABLE = Type.getType(Throwable.class);
 	protected final Type TYPE_METHOD = Type.getType(java.lang.reflect.Method.class);
 	protected final Method METHOD_METHOD_INVOKE = Method.getMethod("Object invoke(Object,Object[])");
-	protected final Method METHOD_IADVICE_ONRETURN = Method.getMethod("void onReturn(Object)");
+	protected final Method METHOD_IADVICE_ONRETURN = Method.getMethod("Object onReturn(Object)");
+	protected final Method METHOD_IADVICE_ONBEGIN = Method.getMethod("Object[] onBegin(Object[])");
 	protected final Method METHOD_IADVICE_ONTHROW = Method.getMethod("void onThrow(Throwable)");
 	protected final Method METHOD_IADVICE_ONINVOKE = Method.getMethod("void onInvoke(Integer,String,String,String,boolean)");
 	
@@ -99,7 +100,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
     }
     
     private void loadInvokeArgs() {
-    	push(5);
+    	push(4);
     	newArray(TYPE_OBJECT);
     	
     	dup();
@@ -126,11 +127,6 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 		push(descr);
 		arrayStore(TYPE_STRING);
 		
-		dup();
-		push(4);
-		//方法参数
-		loadArgArray();
-		arrayStore(TYPE_OBJECT_ARRAY);
     }
     
     
@@ -144,7 +140,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
             }
 
             case ARETURN: {
-                dup();
+//                dup();
                 loadLocal(adviceLocalIndex);
                 swap();
                 break;
@@ -152,7 +148,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 
             case LRETURN:
             case DRETURN: {
-                dup2();
+//                dup2();
                 box(Type.getReturnType(methodDesc));
                 loadLocal(adviceLocalIndex);
                 swap();
@@ -160,10 +156,31 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
             }
 
             default: {
-            	dup();
+//            	dup();
                 box(Type.getReturnType(methodDesc));
                 loadLocal(adviceLocalIndex);
                 swap();
+                break;
+            }
+
+        }
+    }
+    
+    private void unboxReturn(int opcode) {
+        switch (opcode) {
+
+            case RETURN: {
+                pop();
+                break;
+            }
+
+            case ARETURN: {
+            	checkCast(Type.getReturnType(methodDesc));
+                break;
+            }
+
+            default: {
+            	unbox(Type.getReturnType(methodDesc));
                 break;
             }
 
@@ -207,8 +224,27 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
         
         checkCast(TYPE_IADVICE);
         
+        dup();
+        
         adviceLocalIndex = newLocal(TYPE_IADVICE);
         storeLocal(adviceLocalIndex);
+        
+        //执行onBegin方法
+        loadArgArray();
+        invokeInterface(TYPE_IADVICE, METHOD_IADVICE_ONBEGIN);
+        
+        checkCast(Type.getType(Object[].class));
+        
+//        //重新赋值
+        Type[] argTypes = Type.getArgumentTypes(methodDesc);
+        for (int i = 0; i < argTypes.length; i++) {
+        	dup();
+        	push(i);
+            arrayLoad(argTypes[i]);
+            unbox(argTypes[i]);
+            storeArg(i);
+        }
+        pop();
         
         mark(beginLabel);
         
@@ -228,6 +264,8 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 			
 			//调用方法
             invokeInterface(TYPE_IADVICE, METHOD_IADVICE_ONRETURN);
+            
+            unboxReturn(opcode);
             
             if(logger.isDebugEnabled()) {
             	logger.debug("transform method {}.{}{} exit", CLASS_NAME, name, descr);

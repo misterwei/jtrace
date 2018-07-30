@@ -4,10 +4,11 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.test.BaseTest;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodArgumentMatcher;
+import com.github.wei.jtrace.core.util.ClazzUtil;
 
 public class MethodArgumentMatcherTest extends BaseTest{
 
@@ -15,7 +16,7 @@ public class MethodArgumentMatcherTest extends BaseTest{
 	public void testArgument() {
 		IMethodMatcher methodMatcher = new MethodArgumentMatcher("test", 2);
 		
-		MethodDescriber methodDescriber = new MethodDescriber("test", "(Ljava/lang/String;Ljava/lang/Integer;)V", 0x1);
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V");
 
 		assertTrue(methodMatcher.match(methodDescriber));
 	}
@@ -24,7 +25,7 @@ public class MethodArgumentMatcherTest extends BaseTest{
 	public void testRegex() {
 		IMethodMatcher methodMatcher = new MethodArgumentMatcher("^test.*", 2);
 		
-		MethodDescriber methodDescriber = new MethodDescriber("testRegex", "(Ljava/lang/String;Ljava/lang/Integer;)V", 0x1);
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V");
 
 		assertTrue(methodMatcher.match(methodDescriber));
 	}

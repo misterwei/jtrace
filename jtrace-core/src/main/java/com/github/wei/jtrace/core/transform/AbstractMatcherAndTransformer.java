@@ -14,15 +14,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.matcher.ITransformer;
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.api.transform.ITransformer;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 
 public abstract class AbstractMatcherAndTransformer implements ITransformer{
-	private static Logger log = LoggerFactory.getLogger("ClassMatcherAndTransformer");
+	private static Logger log = LoggerFactory.getLogger("MatcherAndTransformer");
 
 	private ConcurrentHashMap<IClassMatcher, List<IMethodMatcher>> matchers = new ConcurrentHashMap<IClassMatcher, List<IMethodMatcher>>();
 
@@ -50,7 +50,11 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 
 	private boolean isMatched(IClassDescriberTree descr, List<MethodDescriber> methods, Set<MethodDescriber> matchResult) throws ClassMatchException{
 		Set<IClassMatcher> classMatchers = matchers.keySet();
-		boolean matched = true;
+		if(classMatchers.isEmpty()) {
+			return false;
+		}
+		
+		boolean matched = false;
 		for(IClassMatcher matcher: classMatchers) {
 			if(matcher.matchClass(descr)) {
 				List<IMethodMatcher> methodMatchers = matchers.get(matcher);
@@ -59,7 +63,7 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 					matchResult.addAll(methods);
 					return true;
 				}else {
-					if(methods != null && !methods.isEmpty()) {
+					if(!methods.isEmpty()) {
 						List<MethodDescriber> matchedMethod = new ArrayList<MethodDescriber>();
 						boolean innerMatched = true;
 						
@@ -72,13 +76,13 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 							}
 							if(innerMatchedMethod.size() == 0) {
 								innerMatched = false;
-								matched = false;
 								break;
 							}else {
 								matchedMethod.addAll(innerMatchedMethod);
 							}
 						}
 						if(innerMatched) {
+							matched = true;
 							matchResult.addAll(matchedMethod);
 						}
 					}
@@ -90,16 +94,16 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 	}
 	
 	@Override
-	public boolean needRetransform(IClassDescriberTree descr) {
-		try {
-			Set<IClassMatcher> classMatchers = matchers.keySet();
-			for(IClassMatcher matcher: classMatchers) {
+	public boolean matchClass(IClassDescriberTree descr) {
+		Set<IClassMatcher> classMatchers = matchers.keySet();
+		for(IClassMatcher matcher: classMatchers) {
+			try {
 				if(matcher.matchClass(descr)) {
 					return true;
 				}
+			}catch(ClassMatchException e) {
+				log.error("Match class " + descr.getClassDescriber().getName() + " failed", e);
 			}
-		}catch(ClassMatchException e) {
-			log.error("Match class " + descr.getClassDescriber().getName() + " failed", e);
 		}
 		return false;
 	}
@@ -110,6 +114,8 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 			matchers.putIfAbsent(classMatcher, new CopyOnWriteArrayList<IMethodMatcher>());
 			_methodMatchers = matchers.get(classMatcher);
 		}
-		_methodMatchers.addAll(methodMatchers);
+		if(methodMatchers != null) {
+			_methodMatchers.addAll(methodMatchers);
+		}
 	}
 }

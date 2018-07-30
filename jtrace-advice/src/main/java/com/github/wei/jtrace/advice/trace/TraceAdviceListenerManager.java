@@ -6,8 +6,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.wei.jtrace.advice.AdviceService;
-import com.github.wei.jtrace.api.advice.AdviceConfig;
+import com.github.wei.jtrace.api.advice.AdviceMatcher;
+import com.github.wei.jtrace.api.advice.AdviceMatcher.MatchType;
+import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
 
@@ -16,12 +17,12 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 	private List<String> tracedConfig = new CopyOnWriteArrayList<String>(); 
 	
 	private ActionManager actionManager;
-	private AdviceService adviceService;
-	private String startClass;
-	public TraceAdviceListenerManager(AdviceService adviceService, String startClass) {
-		this.adviceService = adviceService;
-		this.startClass = startClass.replace('/', '.');
+	private AdviceMatcher matcher;
+	private IAdviceController adviceController;
+	
+	public TraceAdviceListenerManager(AdviceMatcher matcher) {
 		actionManager = new ActionManager();
+		this.matcher = matcher;
 	}
 	
 	public List<Action> getActions(){
@@ -30,7 +31,7 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 	
 	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr) {
 		boolean createAction = false;
-		if(ownClass.getName().equals(startClass)) {
+		if(ownClass.getName().equals(matcher.getClassName())) {
 			createAction = true;
 		}
 		return new AdviceListener(ownClass, own, methodName, methodDescr, createAction);
@@ -89,11 +90,15 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			}
 			tracedConfig.add(key);
 			
-			try {
-				adviceService.registAdviceListenerWithNoID(new AdviceConfig(own, fullMethod, true), TraceAdviceListenerManager.this, !itf);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			adviceController.addMatcher(AdviceMatcher.newBuilder(own).addMethod(fullMethod).relateParent().matchType(MatchType.BASE).build());
+			adviceController.refresh();
 		}
+	}
+
+	@Override
+	public void init(IAdviceController adviceController) {
+		this.adviceController = adviceController;
+		adviceController.addMatcher(matcher);
+		adviceController.refresh();
 	}
 }

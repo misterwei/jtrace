@@ -14,17 +14,19 @@ public class AdviceInvoker implements IAdvice{
 	}
 	
 	@Override
-	public void onBegin(Object[] args) {
+	public Object[] onBegin(Object[] args) {
 		for(IAdviceListener listener : listeners) {
 			listener.onBegin(args);
 		}
+		return args;
 	}
 
 	@Override
-	public void onReturn(Object obj) {
+	public Object onReturn(Object obj) {
 		for(IAdviceListener listener : listeners) {
 			listener.onReturn(obj);
 		}
+		return obj;
 	}
 
 	@Override

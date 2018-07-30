@@ -27,8 +27,10 @@ import com.github.wei.jtrace.api.clazz.IClassFinder;
 import com.github.wei.jtrace.api.clazz.IClassFinderManager;
 import com.github.wei.jtrace.api.config.IConfig;
 import com.github.wei.jtrace.api.exception.ClassFinderException;
-import com.github.wei.jtrace.api.matcher.ITransformer;
+import com.github.wei.jtrace.api.exception.ClassMatchException;
 import com.github.wei.jtrace.api.service.IAsyncService;
+import com.github.wei.jtrace.api.transform.ITransformer;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
 import com.github.wei.jtrace.core.util.AgentHelper;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 import com.github.wei.jtrace.core.util.IdGenerator;
@@ -53,7 +55,7 @@ public class TransformService implements IAsyncService{
 		return "transformer";
 	}
 
-	private LinkedBlockingQueue<ITransformer> matcherQueue = new LinkedBlockingQueue<ITransformer>();
+	private LinkedBlockingQueue<IClassMatcher> matcherQueue = new LinkedBlockingQueue<IClassMatcher>();
 		
 	private ConcurrentHashMap<Integer, ITransformer > transformers = new ConcurrentHashMap<Integer, ITransformer >();
 		
@@ -112,12 +114,12 @@ public class TransformService implements IAsyncService{
 		return true;
 	}
 	
-	public synchronized void removeTransformerByMatched(IClassDescriberTree classTree) {
+	public synchronized void removeTransformerByMatched(IClassDescriberTree classTree) throws ClassMatchException {
 		Set<Integer> ids = transformers.keySet();
 		Iterator<Integer> it = ids.iterator();
 		while(it.hasNext()) {
 			ITransformer matcher = transformers.get(it.next());
-			if(matcher != null && matcher.needRetransform(classTree)) {
+			if(matcher != null && matcher.matchClass(classTree)) {
 				it.remove();
 				refreshTransformer(matcher);
 			}
@@ -154,7 +156,7 @@ public class TransformService implements IAsyncService{
 	}
 	
 	//刷新Transformer，重新嵌码
-	public boolean refreshTransformer(ITransformer transformer) {
+	public boolean refreshTransformer(IClassMatcher transformer) {
 		if(transformer != null) {
 			matcherQueue.add(transformer);
 			return true;
@@ -188,8 +190,8 @@ public class TransformService implements IAsyncService{
 	public void run() {
 		try {
 			while(running){
-				ITransformer transformer = matcherQueue.take();
-				if(transformer == null) {
+				IClassMatcher matcher = matcherQueue.take();
+				if(matcher == null) {
 					continue;
 				}
 				
@@ -204,7 +206,7 @@ public class TransformService implements IAsyncService{
 							continue;
 						}
 						try {
-							if(transformer.needRetransform(new ClassDescriberTreeFromClass(clazz))){
+							if(matcher.matchClass(new ClassDescriberTreeFromClass(clazz))){
 								found = true;
 								try {
 									if(inst.isModifiableClass(clazz)) {
@@ -225,7 +227,7 @@ public class TransformService implements IAsyncService{
 					}
 					
 					if(!found) {
-						log.warn("Transformer {} not found matched classes", transformer);
+						log.warn("ClassMatcher {} not found matched classes", matcher);
 					}
 				}
 			}

@@ -5,14 +5,13 @@ import com.github.wei.jtrace.agent.IAdvice;
 public class DummyAdvice implements IAdvice {
 
 	@Override
-	public void onBegin(Object[] args) {
-		// TODO Auto-generated method stub
-
+	public Object[] onBegin(Object[] args) {
+		return args;
 	}
 
 	@Override
-	public void onReturn(Object obj) {
-		// TODO Auto-generated method stub
+	public Object onReturn(Object obj) {
+		return obj;
 	}
 
 	@Override

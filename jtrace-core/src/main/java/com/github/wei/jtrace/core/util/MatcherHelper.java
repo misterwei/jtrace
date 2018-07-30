@@ -1,14 +1,15 @@
 package com.github.wei.jtrace.core.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.github.wei.jtrace.api.matcher.BaseClassMatcher;
-import com.github.wei.jtrace.api.matcher.ExtractClassMatcher;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.matcher.InterfaceClassMatcher;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
+import com.github.wei.jtrace.core.transform.matchers.BaseClassMatcher;
+import com.github.wei.jtrace.core.transform.matchers.ExtractClassMatcher;
+import com.github.wei.jtrace.core.transform.matchers.InterfaceClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodArgumentMatcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodExtractMatcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodNameMatcher;
@@ -47,15 +48,26 @@ public class MatcherHelper {
 		throw new IllegalArgumentException("不能识别的类适配方式 ：" + matchType);
 	}
 	
-	public static IMethodMatcher[] extractMethodMatchers(String methodStr) {
-		IMethodMatcher[] methodMatchers = null;
+	public static List<IMethodMatcher> extractMethodMatchers(List<String> methods) {
+		List<IMethodMatcher> methodMatchers = new ArrayList<IMethodMatcher>();
+		for(String method : methods) {
+			List<IMethodMatcher> ms = extractMethodMatchers(method);
+			if(ms != null) {
+				methodMatchers.addAll(ms);
+			}
+		}
+		return methodMatchers;
+	}
+	
+	public static List<IMethodMatcher> extractMethodMatchers(String methodStr) {
+		List<IMethodMatcher> methodMatchers = null;
 		if(methodStr != null) {
 			List<String> methods = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(methodStr);
 			if(methods != null && methods.size() > 0) {
-				methodMatchers = new IMethodMatcher[methods.size()];
+				methodMatchers = new ArrayList<IMethodMatcher>(methods.size());
 				
 				for(int i=0;i<methods.size();i++) {
-					methodMatchers[i] = extractMethodMatcher(methods.get(i));
+					methodMatchers.add(extractMethodMatcher(methods.get(i)));
 				}
 			}
 		}

@@ -15,15 +15,13 @@ public final class Advisor {
 	
 	protected volatile static AdviceManager adviceManager;
 	
-	public static IAdvice onMethodBegin(Class<?> ownClass, Object own, String methodName, String methodDescr, Object[] args) {
+	public static IAdvice onMethodBegin(Class<?> ownClass, Object own, String methodName, String methodDescr) {
 		if(log.isDebugEnabled()) {
 			log.debug("Advisor begin {}.{}{}", ownClass.getName(), methodName, methodDescr);
 		}
 		
 		if(adviceManager != null) {
-			IAdvice advice = adviceManager.createAdvice(ownClass, own, methodName, methodDescr);
-			advice.onBegin(args);
-			return advice;
+			return adviceManager.createAdvice(ownClass, own, methodName, methodDescr);
 		}
 		return new DummyAdvice();
 	}

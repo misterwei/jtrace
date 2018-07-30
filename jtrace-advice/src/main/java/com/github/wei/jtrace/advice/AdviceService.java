@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.wei.jtrace.api.advice.AdviceConfig;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
 import com.github.wei.jtrace.api.advice.IAdviceManager;
 import com.github.wei.jtrace.api.beans.AutoRef;
@@ -24,17 +23,13 @@ public class AdviceService {
 	private ConcurrentHashMap<Integer, IAdviceListenerManager> adviceListeners = new ConcurrentHashMap<Integer, IAdviceListenerManager>();
 	
 	
-	public int registAdviceListener(AdviceConfig config, IAdviceListenerManager listener, boolean relatParent) throws Exception {
+	public int registAdviceListener(IAdviceListenerManager listener, boolean trace) throws Exception {
 		int id = ids.incrementAndGet();
 		adviceListeners.put(id, listener);
 		
-		adviceManager.registAdviceListener(config, listener, relatParent);
+		adviceManager.registAdviceListener(listener, trace);
 		
 		return id;
-	}
-	
-	public void registAdviceListenerWithNoID(AdviceConfig config, IAdviceListenerManager listener, boolean relatParent) throws Exception {
-		adviceManager.registAdviceListener(config, listener, relatParent);
 	}
 	
 	public IAdviceListenerManager getAdviceListenerManager(int id) {

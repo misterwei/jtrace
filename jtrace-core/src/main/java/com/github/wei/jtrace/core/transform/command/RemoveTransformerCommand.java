@@ -1,16 +1,12 @@
 package com.github.wei.jtrace.core.transform.command;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.command.Argument;
 import com.github.wei.jtrace.api.command.ICommand;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
 import com.github.wei.jtrace.core.transform.TransformService;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
 
 @Bean
 public class RemoveTransformerCommand implements ICommand{

@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import com.github.wei.jtrace.advice.AdviceService;
-import com.github.wei.jtrace.api.advice.AdviceConfig;
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.command.Argument;
@@ -25,11 +24,10 @@ public class TimeCountCommand implements ICommand{
 		String method = String.valueOf(args[1]);
 		Integer times = (Integer)args[2];
 		
-		AdviceConfig config = new AdviceConfig(className, method);
-		int id = adviceService.registAdviceListener(config, new TimeCountAdviceListenerManager(times), false);
+		int id = adviceService.registAdviceListener(new TimeCountAdviceListenerManager(className, method, times), false);
 		
 		HashMap<String,Object> result = new HashMap<String, Object>();
-		result.put("id", id);
+		result.put("id", id);	
 		return result;
 	}
 

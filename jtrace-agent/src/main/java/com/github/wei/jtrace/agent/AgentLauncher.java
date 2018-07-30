@@ -42,8 +42,7 @@ public class AgentLauncher {
                         Class.class,
                         Object.class,
                         String.class,
-                        String.class,
-                        Object[].class));
+                        String.class));
 
         return jtraceClassLoader;
     }

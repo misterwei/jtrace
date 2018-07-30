@@ -1,7 +1,7 @@
 package com.github.wei.jtrace.core.advisor;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.wei.jtrace.agent.IAdvice;
-import com.github.wei.jtrace.api.advice.AdviceConfig;
+import com.github.wei.jtrace.api.advice.AdviceMatcher;
+import com.github.wei.jtrace.api.advice.AdviceMatcher.MatchType;
+import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
 import com.github.wei.jtrace.api.advice.IAdviceManager;
@@ -19,12 +21,16 @@ import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.beans.IProcessingBean;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
-import com.github.wei.jtrace.api.matcher.BaseClassMatcher;
-import com.github.wei.jtrace.api.matcher.ExtractClassMatcher;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
+import com.github.wei.jtrace.core.transform.IMatchedListener;
 import com.github.wei.jtrace.core.transform.TransformService;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
+import com.github.wei.jtrace.core.transform.matchers.BaseClassMatcher;
+import com.github.wei.jtrace.core.transform.matchers.ExtractClassMatcher;
+import com.github.wei.jtrace.core.transform.matchers.InterfaceClassMatcher;
+import com.github.wei.jtrace.core.transform.matchers.OrClassMatcher;
 import com.github.wei.jtrace.core.util.ClazzUtil;
+import com.github.wei.jtrace.core.util.Constants;
 import com.github.wei.jtrace.core.util.MatcherHelper;
 
 /**
@@ -97,18 +103,22 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 		transformService.removeTransformer(transformer);
 		
 		Set<String> keys = listeners.keySet();
-		for(String key: keys) {
-			List<IAdviceListenerManager> managers = listeners.get(key);
+		for(Iterator<String> it = keys.iterator(); it.hasNext();) {
+			List<IAdviceListenerManager> managers = listeners.get(it.next());
 			if(managers != null) {
 				managers.remove(listener);
 				if(managers.isEmpty()) {
-					listeners.remove(key);
+					it.remove();
 				}
 			}
 		}
 	}
 	
 	private IClassMatcher createExtractClassMatcher(IClassDescriberTree tree) {
+		if(tree == null) {
+			return null;
+		}
+		
 		List<String> classNames = new ArrayList<String>();
 		classNames.add(tree.getClassDescriber().getName());
 		IClassDescriberTree t = tree.getSuperClass();
@@ -123,52 +133,75 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 	 * 注册切面监听器
 	 * 
 	 */
-	public void registAdviceListener(AdviceConfig config, final IAdviceListenerManager listener, boolean relateParent) throws Exception {
-		String clazz = ClazzUtil.classNameToPath(config.getClassName());
-		String methods = config.getMethods();
+	public void registAdviceListener(final IAdviceListenerManager listener, boolean trace) throws Exception {
 		
-		IClassMatcher classMatcher = null;
-		//是否对父类也进行适配
-		if(relateParent) {
-			IClassDescriberTree tree = transformService.findClassDescriberTree(clazz);
-			if(tree != null) {
-				classMatcher = createExtractClassMatcher(tree);
+		if(listenerAndTransformers.containsKey(listener)) {
+			return;
+		}
+		
+		final AdvisorTransformer transformer = new AdvisorTransformer(trace);
+		
+		transformer.addAdvisorMatchedListener(new IMatchedListener() {
+			@Override
+			public void matched(String className, String method, String desc) {
+				String sign = ClazzUtil.getSignature(className, method, desc);
+				addListener(sign, listener);
 			}
-		}
-		if(classMatcher == null) {
-			classMatcher = new BaseClassMatcher(clazz);
-		}
+		});
 		
-		boolean newTransformer = false;
-		AdvisorTransformer transformer = listenerAndTransformers.get(listener);
-		if(transformer == null) {
-			boolean trace = config.isInvokeTrace();
-			transformer = new AdvisorTransformer(trace);
-			newTransformer = true;
-		}
+		listenerAndTransformers.put(listener, transformer);
 		
-		if(methods != null && !methods.isEmpty()) {
-			IMethodMatcher[] methodMatchers = MatcherHelper.extractMethodMatchers(methods);
-			transformer.addMatcher(classMatcher, Arrays.asList(methodMatchers));
-		}
+		transformService.registTransformer(transformer, false);
 		
-		if(newTransformer) {
-			//注册监听器，类名方法名标识与监听器绑定
-			transformer.addAdvisorMatchedListener(new IAdvisorMatchedListener() {
-				@Override
-				public void matched(String className, String method, String desc) {
-					String sign = ClazzUtil.getSignature(className, method, desc);
-					addListener(sign, listener);
+		listener.init(new IAdviceController() {
+			@Override
+			public void addMatcher(AdviceMatcher matcher) {
+				String className = matcher.getClassName().replace('.', '/');
+				List<String> methods = matcher.getMethods();
+				
+				IClassMatcher classMatcher = null;
+				IClassMatcher relateParentMatcher = null;
+				//是否对父类也进行适配
+				if(matcher.isRelateParent()) {
+					IClassDescriberTree tree = transformService.findClassDescriberTree(className);
+					if(tree != null ) {
+						IClassDescriberTree superTree = tree.getSuperClass();
+						if(superTree != null && !Constants.CLASS_OBJECT.equals(superTree.getClassDescriber().getName())) {
+							relateParentMatcher = createExtractClassMatcher(superTree);
+						}
+					}
 				}
-			});
+				
+				//对当前类进行适配
+				if(matcher.getMatchType() == MatchType.BASE) {
+					classMatcher = new BaseClassMatcher(className);
+				}else if(matcher.getMatchType() == MatchType.INTERFACE) {
+					classMatcher = new InterfaceClassMatcher(className);
+				}else {
+					classMatcher = new ExtractClassMatcher(className);
+				}
+				
+				if(relateParentMatcher != null) {
+					classMatcher = new OrClassMatcher(classMatcher, relateParentMatcher);
+				}
+				
+				List<IMethodMatcher> methodMatchers = null;
+				if(methods != null && !methods.isEmpty()) {
+					methodMatchers = MatcherHelper.extractMethodMatchers(methods);
+				}
+				transformer.addMatcher(classMatcher, methodMatchers);
+			}
 			
-			listenerAndTransformers.put(listener, transformer);
-			transformService.registTransformer(transformer, true);
-		}else {
-			transformService.refreshTransformer(transformer);
-		}
-		
-		
+			@Override
+			public void refresh() {
+				transformService.refreshTransformer(transformer);
+			}
+			
+			@Override
+			public void restore() {
+				transformService.removeTransformer(transformer);
+			}
+		});
 	}
 	
 	@Override

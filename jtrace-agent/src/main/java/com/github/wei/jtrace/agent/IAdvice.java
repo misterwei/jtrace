@@ -1,9 +1,9 @@
 package com.github.wei.jtrace.agent;
 
 public interface IAdvice {
-	void onBegin(Object[] args);
+	Object[] onBegin(Object[] args);
 	
-	void onReturn(Object obj);
+	Object onReturn(Object obj);
 	
 	void onThrow(Throwable thr);
 	

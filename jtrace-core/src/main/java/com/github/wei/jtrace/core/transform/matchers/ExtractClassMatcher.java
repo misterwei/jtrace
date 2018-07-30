@@ -1,13 +1,12 @@
-package com.github.wei.jtrace.api.matcher;
+package com.github.wei.jtrace.core.transform.matchers;
 
 import java.util.Arrays;
 
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 
-public class BaseClassMatcher extends AbstractClassMatcher{
-
+public class ExtractClassMatcher extends AbstractClassMatcher{
 	private String[] className;
-	public BaseClassMatcher(String... className) {
+	public ExtractClassMatcher(String... className) {
 		this.className = className;
 		Arrays.sort(className);
 	}
@@ -18,6 +17,7 @@ public class BaseClassMatcher extends AbstractClassMatcher{
 	}
 
 	public boolean isMatchSubClass() {
-		return true;
+		return false;
 	}
+
 }

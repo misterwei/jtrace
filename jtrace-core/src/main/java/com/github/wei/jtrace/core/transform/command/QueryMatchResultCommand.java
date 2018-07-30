@@ -10,7 +10,7 @@ import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.command.Argument;
 import com.github.wei.jtrace.api.command.ICommand;
-import com.github.wei.jtrace.api.matcher.ITransformer;
+import com.github.wei.jtrace.api.transform.ITransformer;
 import com.github.wei.jtrace.core.transform.TransformService;
 import com.github.wei.jtrace.core.transform.matchers.IQueryMatchResult;
 

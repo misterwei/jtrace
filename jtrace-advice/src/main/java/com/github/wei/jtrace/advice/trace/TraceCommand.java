@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import com.github.wei.jtrace.advice.AdviceService;
-import com.github.wei.jtrace.api.advice.AdviceConfig;
+import com.github.wei.jtrace.api.advice.AdviceMatcher;
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.command.Argument;
@@ -24,7 +24,7 @@ public class TraceCommand implements ICommand{
 		String className = String.valueOf(args[0]);
 		String method = String.valueOf(args[1]);
 		
-		int id = service.registAdviceListener(new AdviceConfig(className, method, true), new TraceAdviceListenerManager(service, className), false);
+		int id = service.registAdviceListener(new TraceAdviceListenerManager(AdviceMatcher.newBuilder(className).addMethod(method).build()), true);
 
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);

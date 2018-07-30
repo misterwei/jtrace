@@ -5,11 +5,11 @@ import java.util.HashMap;
 
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
-import com.github.wei.jtrace.api.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.matcher.ITransformer;
+import com.github.wei.jtrace.api.transform.ITransformer;
+import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.transform.ClassMatcherAndResult;
 import com.github.wei.jtrace.core.transform.TransformService;
-import com.github.wei.jtrace.core.transform.matchers.IMethodMatcher;
 
 @Bean
 public class MatchClassCommand extends AbstractClassMatchCommand{

@@ -2,7 +2,8 @@ package com.github.wei.jtrace.core.transform.matchers;
 
 import org.objectweb.asm.Type;
 
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.util.StringUtil;
 
 public class MethodExtractMatcher implements IMethodMatcher{

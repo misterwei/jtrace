@@ -15,8 +15,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
+import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.core.clazz.ClassInfo;
-import com.github.wei.jtrace.core.clazz.MethodDescriber;
 
 public class ClazzUtil {
 
@@ -54,7 +54,10 @@ public class ClazzUtil {
 		List<MethodDescriber> methodInfos = new ArrayList<MethodDescriber>(methods.length);
 		for(int i=0;i<methods.length;i++){
 			Method m = methods[i];
-			methodInfos.add(new MethodDescriber(m.getName(), Type.getMethodDescriptor(m), m.getModifiers()));
+			
+			String desc = Type.getMethodDescriptor(m).replace('.', '/');
+			
+			methodInfos.add(extractMethodDescriber(m.getModifiers(), m.getName(), desc));
 		}
 		
 		info.setMethods(methodInfos);
@@ -80,6 +83,22 @@ public class ClazzUtil {
 		return classInfo;
 	}
 	
+	public static MethodDescriber extractMethodDescriber(int access, String name, String desc) {
+		Type[] types = Type.getArgumentTypes(desc);
+		String[] argumentTypes  = null;
+		if(types != null) {
+			argumentTypes = new String[types.length]; 
+			for(int j=0;j< types.length;j++) {
+				argumentTypes[j] = types[j].getClassName().replace('.', '/');
+			}
+		}
+		
+		String returnType = Type.getReturnType(desc).getClassName().replace('.', '/');
+		String modifier = ModifierUtil.toString(access);
+		
+		return new MethodDescriber(name, modifier, argumentTypes, returnType, desc);
+	}
+	
 	public static List<MethodDescriber> extractMethodDescribers(ClassReader classReader){
 		final List<MethodDescriber> methods = new ArrayList<MethodDescriber>();
 
@@ -87,7 +106,8 @@ public class ClazzUtil {
 			@Override
 			public MethodVisitor visitMethod(int access, String name, String desc, String signature,
 					String[] exceptions) {
-				MethodDescriber methodInfo = new MethodDescriber(name, desc, access);
+				
+				MethodDescriber methodInfo = extractMethodDescriber(access, name, desc);
 				methods.add(methodInfo);
 				return super.visitMethod(access, name, desc, signature, exceptions);
 			}
