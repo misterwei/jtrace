@@ -2,7 +2,6 @@ package com.github.wei.jtrace.weave;
 
 import java.net.URLClassLoader;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +23,7 @@ public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 	static Logger log = LoggerFactory.getLogger("WeaveAdviceListenerManager");
 	
 	private final List<AdviceMatcher.Builder> matchers;
-	private final Map<AdviceMatcher.Builder,String> advisors;
+	private final List<AdviceMatcher.Builder> advisors;
 	
 	private final AtomicInteger counter = new AtomicInteger(0);
 	private final int SIZE;
@@ -34,7 +33,7 @@ public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 	
 	private IAdviceController controller;
 	
-	public WeaveAdviceListenerManager(List<AdviceMatcher.Builder> matchers, Map<AdviceMatcher.Builder,String> advisors, ExtensionJarInfo jarInfo) {
+	public WeaveAdviceListenerManager(List<AdviceMatcher.Builder> matchers, List<AdviceMatcher.Builder> advisors, ExtensionJarInfo jarInfo) {
 		this.matchers = matchers;
 		this.SIZE = matchers.size();
 		
@@ -63,10 +62,7 @@ public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 	}
 
 	private void addAdvisor() {
-		Set<AdviceMatcher.Builder> keys = advisors.keySet();
-		for(AdviceMatcher.Builder  builder : keys) {
-			final String listenerClass = advisors.get(builder);
-			builder.setMessage(listenerClass);
+		for(AdviceMatcher.Builder  builder : advisors) {
 			this.controller.addMatcher(builder.build());
 		}
 		this.controller.refresh();

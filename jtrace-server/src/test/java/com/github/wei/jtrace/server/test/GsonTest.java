@@ -1,4 +1,4 @@
-package com.github.wei.server.test;
+package com.github.wei.jtrace.server.test;
 
 import java.io.IOException;
 import java.io.Serializable;

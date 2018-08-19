@@ -114,5 +114,6 @@
     <module>jtrace-weave-servlet</module>
 	<module>jtrace-weave-servlet2</module>
 	<module>jtrace-weave</module>
+	<module>jtrace-logger</module>
   </modules>
 </project>

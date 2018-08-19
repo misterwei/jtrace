@@ -1,2 +1,2 @@
 Bean-Classes:
- - com.github.wei.server.NettyRestServer
+ - com.github.wei.jtrace.server.NettyRestServer

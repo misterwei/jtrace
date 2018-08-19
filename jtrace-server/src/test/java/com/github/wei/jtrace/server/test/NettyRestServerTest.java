@@ -1,10 +1,10 @@
-package com.github.wei.server.test;
+package com.github.wei.jtrace.server.test;
 
 import org.junit.Test;
 
 import com.github.wei.jtrace.api.beans.IBeanFactory;
 import com.github.wei.jtrace.core.test.BaseTest;
-import com.github.wei.server.NettyRestServer;
+import com.github.wei.jtrace.server.NettyRestServer;
 
 public class NettyRestServerTest extends BaseTest{
 

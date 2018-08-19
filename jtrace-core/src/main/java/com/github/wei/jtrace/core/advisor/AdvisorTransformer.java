@@ -79,7 +79,7 @@ public class AdvisorTransformer extends AbstractMatcherAndTransformer implements
 	}
 	
 	private class ClassAdvisorWriter extends ClassVisitor implements Opcodes{
-		Logger logger = LoggerFactory.getLogger("ClassAdvisorWriter");
+		final Logger logger = LoggerFactory.getLogger("ClassAdvisorWriter");
 		
 		private final String CLASS_NAME;
 		private final Set<MatchedMethod> matchedMethods;

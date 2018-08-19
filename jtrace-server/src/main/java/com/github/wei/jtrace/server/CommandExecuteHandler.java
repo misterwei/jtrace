@@ -1,4 +1,4 @@
-package com.github.wei.server;
+package com.github.wei.jtrace.server;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;

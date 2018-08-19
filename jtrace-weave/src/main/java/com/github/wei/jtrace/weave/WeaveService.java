@@ -1,7 +1,6 @@
 package com.github.wei.jtrace.weave;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +63,7 @@ public class WeaveService extends AbstractExtensionService{
 			}
 		}
 		
-		Map<AdviceMatcher.Builder, String> weaveListener = new HashMap<AdviceMatcher.Builder, String>();
+		List<AdviceMatcher.Builder> weaveListeners = new ArrayList<AdviceMatcher.Builder>();
 		Object weaveAdvisor = attrs.get("Weave-Listener");
 		if(weaveAdvisor != null) {
 			List<Map<String, Object>> listeners = (List<Map<String, Object>>)weaveAdvisor;
@@ -93,13 +92,14 @@ public class WeaveService extends AbstractExtensionService{
 				}
 				
 				String listenerClass = (String)listener.get("listener");
+				builder.setMessage(listenerClass);
 				
-				weaveListener.put(builder, listenerClass);
+				weaveListeners.add(builder);
 			}
 		}
 		
 		try {
-			adviceManager.registAdviceListener(new WeaveAdviceListenerManager(signatures, weaveListener, jarInfo));
+			adviceManager.registAdviceListener(new WeaveAdviceListenerManager(signatures, weaveListeners, jarInfo));
 		} catch (Exception e) {
 			log.warn("regist advice listener failed", e);
 		}

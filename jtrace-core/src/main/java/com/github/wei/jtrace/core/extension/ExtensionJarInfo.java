@@ -1,7 +1,6 @@
 package com.github.wei.jtrace.core.extension;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -30,16 +29,17 @@ public class ExtensionJarInfo {
 			jarFile = new JarFile(file);
 
 			JarEntry entry = jarFile.getJarEntry("META-INF/jtrace-extension.yaml");
-			if(entry == null) {
-				throw new FileNotFoundException("no jtrace-extension.yaml found");
+			if(entry != null) {
+				InputStream in = jarFile.getInputStream(entry);
+				
+				Yaml yaml = new Yaml();
+				Map<String, Object> config = yaml.load(in);
+				
+				attributes = Collections.unmodifiableMap(config);
+			}else {
+				attributes = Collections.emptyMap();
 			}
 			
-			InputStream in = jarFile.getInputStream(entry);
-			
-			Yaml yaml = new Yaml();
-			Map<String, Object> config = yaml.load(in);
-			
-			attributes = Collections.unmodifiableMap(config);
 			
 		}finally{
 			if(jarFile != null){

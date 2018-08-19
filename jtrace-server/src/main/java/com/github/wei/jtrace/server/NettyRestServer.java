@@ -1,4 +1,4 @@
-package com.github.wei.server;
+package com.github.wei.jtrace.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

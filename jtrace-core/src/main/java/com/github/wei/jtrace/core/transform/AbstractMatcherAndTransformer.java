@@ -193,7 +193,8 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 	}
 	
 	/**
-	 * 移除了Matcher,如果要恢复Matcher适配的嵌码类。可以用返回的IClassMatcher进行refresh
+	 * 移除了Matcher,如果要恢复Matcher适配的嵌码类。可以用返回的IClassMatcher进行refresh.
+	 * 如果没有找到Matcher，则返回NULL
 	 * @param groupId
 	 * @param id
 	 */
@@ -209,7 +210,12 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 				removed.add(m);
 			}
 		}
-		matchers.removeAll(removed);
+		
+		if(matchers.size() == removed.size()) {
+			groupMatchers.remove(groupId);
+		}else {
+			matchers.removeAll(removed);
+		}
 		
 		if(!removed.isEmpty()) {
 			return new OrClassMatcher(removed);
@@ -217,6 +223,11 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 		return null;
 	}
 	
+	/**
+	 * 如果没有找到Matcher，则返回NULL
+	 * @param groupId
+	 * @return
+	 */
 	public IClassMatcher getGroupClassMatcher(int groupId){
 		List<Matcher> matchers = groupMatchers.get(groupId);
 		if(matchers != null) {
@@ -225,6 +236,12 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 		return null;
 	}
 	
+	/**
+	 * 根据groupId，删除Matcher
+	 * 如果没有找到Matcher，则返回NULL
+	 * @param groupId
+	 * @return
+	 */
 	public IClassMatcher removeGroupClassMatcherById(int groupId) {
 		List<Matcher> matchers = groupMatchers.remove(groupId);
 		if(matchers != null) {
