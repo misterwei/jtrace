@@ -42,7 +42,7 @@ public class AdviceInvoker implements IAdvice{
 	@Override
 	public void onInvoke(Integer lineNumber, String own, String name, String desc, boolean itf) {
 		for(IAdviceListener listener : listeners) {
-			listener.onInvoke(lineNumber, own, name, desc, itf);;
+			listener.onInvoke(lineNumber, own, name, desc, itf);
 		}
 	}
 

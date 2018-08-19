@@ -10,3 +10,10 @@ Weave-Listener:
     method:
      - service
   listener: com.github.wei.weave.servlet.HttpServletListener
+ -
+  matcher:
+    type: interface
+    class: javax.servlet.http.HttpServletResponse
+    method:
+     - getWriter
+  listener: com.github.wei.weave.servlet.HttpServletResponseListener
