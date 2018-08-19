@@ -1,0 +1,12 @@
+Weave-Signature:
+ - 
+   class: javax.servlet.http.HttpServletResponse
+     
+Weave-Listener:
+ -
+  matcher:
+    type: extract
+    class: javax.servlet.http.HttpServlet
+    method:
+     - service
+  listener: com.github.wei.weave.servlet.HttpServletListener

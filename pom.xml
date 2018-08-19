@@ -111,8 +111,8 @@
   	<module>jtrace-api</module>
     <module>jtrace-server</module>
     <module>jtrace-advice</module>
-    <module>jtrace-weave-servlet</module>
-	<module>jtrace-weave-servlet2</module>
+    <module>jtrace-weave-servlet-test</module>
+	<module>jtrace-weave-servlet-test2</module>
 	<module>jtrace-weave</module>
 	<module>jtrace-logger</module>
   </modules>
