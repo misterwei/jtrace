@@ -16,7 +16,10 @@ public class AdviceInvoker implements IAdvice{
 	@Override
 	public Object[] onBegin(Object[] args) {
 		for(IAdviceListener listener : listeners) {
-			listener.onBegin(args);
+			Object[] temp = listener.onBegin(args);
+			if(temp != null && temp.length == args.length) {
+				args = temp;
+			}
 		}
 		return args;
 	}
@@ -24,7 +27,7 @@ public class AdviceInvoker implements IAdvice{
 	@Override
 	public Object onReturn(Object obj) {
 		for(IAdviceListener listener : listeners) {
-			listener.onReturn(obj);
+			obj = listener.onReturn(obj);
 		}
 		return obj;
 	}

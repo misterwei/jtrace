@@ -58,16 +58,18 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 	
 	private class AdviceListener implements IAdviceListener{
 		
-		public void onBegin(Object[] args) {
+		public Object[] onBegin(Object[] args) {
 			if("begin".equals(pos)) {
 				addValue(args);
 			}
+			return args;
 		}
 
-		public void onReturn(Object obj) {
+		public Object onReturn(Object obj) {
 			if("return".equals(pos)) {
 				addValue(obj);
 			}
+			return obj;
 		}
 
 		public void onThrow(Throwable thr) {

@@ -64,12 +64,14 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 	private class AdviceListener implements IAdviceListener{
 		private long start = 0;
 		
-		public void onBegin(Object[] args) {
+		public Object[] onBegin(Object[] args) {
 			start = System.currentTimeMillis();
+			return args;
 		}
 
-		public void onReturn(Object obj) {
+		public Object onReturn(Object obj) {
 			addValue(System.currentTimeMillis() - start);
+			return obj;
 		}
 
 		public void onThrow(Throwable thr) {

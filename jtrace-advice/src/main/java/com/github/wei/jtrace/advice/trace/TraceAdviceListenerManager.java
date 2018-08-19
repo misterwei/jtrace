@@ -49,18 +49,20 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			this.createAction = createAction;
 		}
 		
-		public void onBegin(Object[] args) {
+		public Object[] onBegin(Object[] args) {
 			Action action = actionManager.getAction(createAction);
 			if(action != null) {
 				action.createTrace(own+"."+method + desc);
 			}
+			return args;
 		}
 
-		public void onReturn(Object obj) {
+		public Object onReturn(Object obj) {
 			Action action = actionManager.getAction(createAction);
 			if(action != null) {
 				action.finishTrace();
 			}
+			return obj;
 		}
 
 		public void onThrow(Throwable thr) {

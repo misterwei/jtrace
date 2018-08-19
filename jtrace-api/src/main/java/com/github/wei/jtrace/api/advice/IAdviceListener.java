@@ -9,7 +9,7 @@ public interface IAdviceListener {
 	 * @param methodDescr
 	 * @param args 方法的参数
 	 */
-	void onBegin(Object[] args);
+	Object[] onBegin(Object[] args);
 	
 	/**
 	 * 方法返回
@@ -19,7 +19,7 @@ public interface IAdviceListener {
 	 * @param methodDescr
 	 * @param obj 返回值
 	 */
-	void onReturn(Object obj);
+	Object onReturn(Object obj);
 	
 	/**
 	 * 方法异常
