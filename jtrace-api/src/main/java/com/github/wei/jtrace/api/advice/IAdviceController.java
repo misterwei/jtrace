@@ -4,6 +4,8 @@ public interface IAdviceController {
 	
 	void addMatcher(AdviceMatcher matcher);
 	
+	void removeMatcher(long id);
+	
 	void refresh();
 	
 	void restore();

@@ -27,8 +27,8 @@ public class WatchValueCommand implements ICommand{
 		String expr = String.valueOf(args[3]);
 		Integer times = (Integer)args[4];
 		
-		AdviceMatcher matcher = AdviceMatcher.newBuilder(className).addMethod(method).build();
-		int id = adviceService.registAdviceListener(new WatchValueAdviceListenerManager(matcher, pos, expr, times), false);
+		AdviceMatcher matcher = AdviceMatcher.newBuilder(className).addMethod(method).end().build();
+		int id = adviceService.registAdviceListener(new WatchValueAdviceListenerManager(matcher, pos, expr, times));
 		
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);

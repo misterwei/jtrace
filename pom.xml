@@ -89,7 +89,7 @@
 			<dependency>
 			  <groupId>org.yaml</groupId>
 			  <artifactId>snakeyaml</artifactId>
-			  <version>1.17</version>
+			  <version>1.21</version>
 			</dependency>
 			
 			<dependency>
@@ -111,5 +111,8 @@
   	<module>jtrace-api</module>
     <module>jtrace-server</module>
     <module>jtrace-advice</module>
+    <module>jtrace-weave-servlet</module>
+	<module>jtrace-weave-servlet2</module>
+	<module>jtrace-weave</module>
   </modules>
 </project>

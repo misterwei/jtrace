@@ -24,7 +24,7 @@ public class TraceCommand implements ICommand{
 		String className = String.valueOf(args[0]);
 		String method = String.valueOf(args[1]);
 		
-		int id = service.registAdviceListener(new TraceAdviceListenerManager(AdviceMatcher.newBuilder(className).addMethod(method).build()), true);
+		int id = service.registAdviceListener(new TraceAdviceListenerManager(AdviceMatcher.newBuilder(className).addMethod(method).withTrace().end().build()));
 
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);

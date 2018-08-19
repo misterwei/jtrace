@@ -1,11 +1,10 @@
 package com.github.wei.jtrace.core.advisor;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,15 +21,17 @@ import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.beans.IProcessingBean;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
-import com.github.wei.jtrace.core.transform.IMatchedListener;
+import com.github.wei.jtrace.api.transform.matcher.IMatchedListener;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcherWithContext;
+import com.github.wei.jtrace.api.transform.matcher.MatcherContext;
 import com.github.wei.jtrace.core.transform.TransformService;
 import com.github.wei.jtrace.core.transform.matchers.BaseClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.ExtractClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.InterfaceClassMatcher;
+import com.github.wei.jtrace.core.transform.matchers.Matcher;
 import com.github.wei.jtrace.core.transform.matchers.OrClassMatcher;
-import com.github.wei.jtrace.core.util.ClazzUtil;
 import com.github.wei.jtrace.core.util.Constants;
+import com.github.wei.jtrace.core.util.IdGenerator;
 import com.github.wei.jtrace.core.util.MatcherHelper;
 
 /**
@@ -45,10 +46,11 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 	@AutoRef
 	private TransformService transformService;
 	
-	private final ConcurrentHashMap<IAdviceListenerManager, AdvisorTransformer> listenerAndTransformers = new ConcurrentHashMap<IAdviceListenerManager, AdvisorTransformer >();
-
-	private final ConcurrentHashMap<String, List<IAdviceListenerManager> > listeners = new ConcurrentHashMap<String, List<IAdviceListenerManager> >();
+	private final AdvisorTransformer transformer = new AdvisorTransformer();
 	
+	private final ConcurrentHashMap<Integer, IAdviceListenerManager > listeners = new ConcurrentHashMap<Integer, IAdviceListenerManager >();
+	
+	private IdGenerator idg = IdGenerator.generate(Integer.MAX_VALUE);
 	
 	/**
 	 * 方法开始，创建切面
@@ -58,60 +60,43 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 	 * @param methodDescr
 	 * @param args
 	 */
-	public IAdvice createAdvice(Class<?> ownClass, Object own, String methodName, String methodDescr) {
-		String sign = ClazzUtil.getSignature(ClazzUtil.classNameToPath(ownClass.getName()), methodName, methodDescr);
+	public IAdvice createAdvice(Class<?> ownClass, Object own, String methodName, String methodDescr, Object[] matcherMessages) {
 		List<IAdviceListener> advices = new  ArrayList<IAdviceListener>();
 		
-		List<IAdviceListenerManager> holders = listeners.get(sign);
-		
-		if(holders != null) {
-			for(IAdviceListenerManager manager : holders) {
-				IAdviceListener listener = manager.create(ownClass, own, methodName, methodDescr);
+		for(Object message : matcherMessages) {
+			Object[] args = (Object[])message;
+			
+			IAdviceListenerManager manager = listeners.get(args[0]);
+			if(manager != null) {
+				IAdviceListener listener = manager.create(ownClass, own, methodName, methodDescr, args);
 				if(listener != null) {
 					advices.add(listener);
 				}
 			}
 		}
+		
 		return new AdviceInvoker(advices);
 	}
-
-	
-	private List<IAdviceListenerManager> getAdviceListeners(String key){
-		List<IAdviceListenerManager> values = listeners.get(key);
-		if(values == null) {
-			values = listeners.putIfAbsent(key, new CopyOnWriteArrayList<IAdviceListenerManager>());
-			if(values == null) { //第一次返回NULL
-				values = listeners.get(key);
-			}
-		}
-		return values;
-	}
-	
-	private void addListener(String key, IAdviceListenerManager manager) {
-		List<IAdviceListenerManager> values = getAdviceListeners(key);
-		if(!values.contains(manager)) {
-			values.add(manager);
-		}
-	}
-	
 	
 	/**
 	 * 移除
 	 */
-	public void removeAdviceListener(IAdviceListenerManager listener) {
-		AdvisorTransformer transformer = listenerAndTransformers.remove(listener);
-		transformService.removeTransformer(transformer);
-		
-		Set<String> keys = listeners.keySet();
-		for(Iterator<String> it = keys.iterator(); it.hasNext();) {
-			List<IAdviceListenerManager> managers = listeners.get(it.next());
-			if(managers != null) {
-				managers.remove(listener);
-				if(managers.isEmpty()) {
-					it.remove();
-				}
-			}
+	public IAdviceListenerManager removeAdviceListener(int id) {
+		IClassMatcher matcher = transformer.removeGroupClassMatcherById(id);
+		if(matcher != null) {
+			transformService.refreshTransformer(matcher);
 		}
+		return listeners.remove(id);
+	}
+	
+	@Override
+	public IAdviceListenerManager getAdviceListener(int id) {
+		return listeners.get(id);
+	}
+	
+	@Override
+	public Map<Integer, IAdviceListenerManager> getAdviceListeners() {
+		return Collections.unmodifiableMap(listeners);
 	}
 	
 	private IClassMatcher createExtractClassMatcher(IClassDescriberTree tree) {
@@ -133,31 +118,17 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 	 * 注册切面监听器
 	 * 
 	 */
-	public void registAdviceListener(final IAdviceListenerManager listener, boolean trace) throws Exception {
+	public int registAdviceListener(final IAdviceListenerManager listener) throws Exception {
 		
-		if(listenerAndTransformers.containsKey(listener)) {
-			return;
-		}
+		final int managerId = idg.next();
 		
-		final AdvisorTransformer transformer = new AdvisorTransformer(trace);
-		
-		transformer.addAdvisorMatchedListener(new IMatchedListener() {
-			@Override
-			public void matched(String className, String method, String desc) {
-				String sign = ClazzUtil.getSignature(className, method, desc);
-				addListener(sign, listener);
-			}
-		});
-		
-		listenerAndTransformers.put(listener, transformer);
-		
-		transformService.registTransformer(transformer, false);
+		listeners.putIfAbsent(managerId, listener);
 		
 		listener.init(new IAdviceController() {
 			@Override
 			public void addMatcher(AdviceMatcher matcher) {
-				String className = matcher.getClassName().replace('.', '/');
-				List<String> methods = matcher.getMethods();
+				String className = matcher.getMatchClassName().replace('.', '/');
+				Map<String, Map<String, Object>> methods = matcher.getMatchMethods();
 				
 				IClassMatcher classMatcher = null;
 				IClassMatcher relateParentMatcher = null;
@@ -185,27 +156,55 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 					classMatcher = new OrClassMatcher(classMatcher, relateParentMatcher);
 				}
 				
-				List<IMethodMatcher> methodMatchers = null;
+				List<IMethodMatcherWithContext> methodMatchers = null;
 				if(methods != null && !methods.isEmpty()) {
 					methodMatchers = MatcherHelper.extractMethodMatchers(methods);
 				}
-				transformer.addMatcher(classMatcher, methodMatchers);
+				
+				//传递groupId、message，用于写入嵌码类。
+				MatcherContext context = matcher.getContext();
+				context.addForList(Constants.MATCHER_CONTEXT_MATCHER_MESSAGES, new Object[] {managerId, matcher.getMessage()});
+				
+				IMatchedListener matcheListener = matcher.getMatchedListener();
+				if(matcheListener != null) {
+					transformer.addMatcher(managerId, new Matcher(matcher.getId(), context, classMatcher, methodMatchers, matcheListener));
+				}else {
+					transformer.addMatcher(managerId, new Matcher(matcher.getId(), context, classMatcher, methodMatchers));
+				}
+			}
+			
+			@Override
+			public void removeMatcher(long id) {
+				transformer.removeMatcher(managerId, id);
 			}
 			
 			@Override
 			public void refresh() {
-				transformService.refreshTransformer(transformer);
+				IClassMatcher matcher = transformer.getGroupClassMatcher(managerId);
+				if(matcher != null) {
+					transformService.refreshTransformer(matcher);
+				}
 			}
 			
 			@Override
 			public void restore() {
-				transformService.removeTransformer(transformer);
+				IClassMatcher matcher = transformer.removeGroupClassMatcherById(managerId);
+				if(matcher != null) {
+					transformService.refreshTransformer(matcher);
+				}
 			}
 		});
+		
+		return managerId;
 	}
 	
 	@Override
 	public void afterProcessComplete() {
+		try {
+			transformService.registTransformer(transformer, false);
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
 		Advisor.adviceManager = this;
 	}
 

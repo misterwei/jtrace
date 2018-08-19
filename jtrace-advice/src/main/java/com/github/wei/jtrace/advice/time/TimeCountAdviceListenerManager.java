@@ -51,13 +51,13 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 		values.add(time);
 	}
 
-	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr) {
+	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr, Object[] matcherMessage) {
 		return new AdviceListener();
 	}
 	
 	@Override
 	public void init(IAdviceController controller) {
-		controller.addMatcher(AdviceMatcher.newBuilder(className).addMethod(method).build());
+		controller.addMatcher(AdviceMatcher.newBuilder(className).addMethod(method).end().build());
 		controller.refresh();
 	}
 	

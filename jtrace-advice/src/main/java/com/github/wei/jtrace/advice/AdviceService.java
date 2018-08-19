@@ -1,9 +1,5 @@
 package com.github.wei.jtrace.advice;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,33 +15,15 @@ public class AdviceService {
 	@AutoRef
 	private IAdviceManager adviceManager;
 	
-	private AtomicInteger ids= new AtomicInteger(0);
-	private ConcurrentHashMap<Integer, IAdviceListenerManager> adviceListeners = new ConcurrentHashMap<Integer, IAdviceListenerManager>();
-	
-	
-	public int registAdviceListener(IAdviceListenerManager listener, boolean trace) throws Exception {
-		int id = ids.incrementAndGet();
-		adviceListeners.put(id, listener);
-		
-		adviceManager.registAdviceListener(listener, trace);
-		
-		return id;
-	}
-	
-	public IAdviceListenerManager getAdviceListenerManager(int id) {
-		return adviceListeners.get(id);
+	public int registAdviceListener(IAdviceListenerManager listener) throws Exception {
+		return adviceManager.registAdviceListener(listener);
 	}
 	
 	public IAdviceListenerManager removeAdviceListenerManager(int id) {
-		IAdviceListenerManager manager = adviceListeners.remove(id);
-		if(manager != null) {
-			adviceManager.removeAdviceListener(manager);
-		}
-		return manager;
+		return adviceManager.removeAdviceListener(id);
 	}
 
-	public Set<Integer> getRegistIds(){
-		return adviceListeners.keySet();
+	public IAdviceListenerManager getAdviceListenerManager(int id) {
+		return adviceManager.getAdviceListener(id);
 	}
-	
 }

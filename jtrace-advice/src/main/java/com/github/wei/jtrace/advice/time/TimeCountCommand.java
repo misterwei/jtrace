@@ -24,7 +24,7 @@ public class TimeCountCommand implements ICommand{
 		String method = String.valueOf(args[1]);
 		Integer times = (Integer)args[2];
 		
-		int id = adviceService.registAdviceListener(new TimeCountAdviceListenerManager(className, method, times), false);
+		int id = adviceService.registAdviceListener(new TimeCountAdviceListenerManager(className, method, times));
 		
 		HashMap<String,Object> result = new HashMap<String, Object>();
 		result.put("id", id);	

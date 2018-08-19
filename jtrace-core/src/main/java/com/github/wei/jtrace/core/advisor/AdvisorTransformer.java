@@ -2,9 +2,8 @@ package com.github.wei.jtrace.core.advisor;
 
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -16,23 +15,20 @@ import org.slf4j.LoggerFactory;
 
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
 import com.github.wei.jtrace.api.clazz.MethodDescriber;
+import com.github.wei.jtrace.api.transform.matcher.MatcherContext;
 import com.github.wei.jtrace.core.transform.AbstractMatcherAndTransformer;
-import com.github.wei.jtrace.core.transform.IMatchedListener;
+import com.github.wei.jtrace.core.transform.MatchedMethod;
 
 public class AdvisorTransformer extends AbstractMatcherAndTransformer implements Opcodes{
 	static Logger logger = LoggerFactory.getLogger("AdvisorTransformer");
-	private boolean trace;
 	
-	private List<IMatchedListener> listeners = new CopyOnWriteArrayList<IMatchedListener>(); 
-
-	
-	public AdvisorTransformer(boolean trace) {
-		this.trace = trace;
-	}
-
 	@Override
 	public byte[] matchedTransform(final ClassLoader loader, IClassDescriberTree descr, Class<?> classBeingRedefined,
-			ProtectionDomain protectionDomain, byte[] classfileBuffer, Set<MethodDescriber> matchedMethods) throws IllegalClassFormatException {
+			ProtectionDomain protectionDomain, byte[] classfileBuffer, Set<MatchedMethod> matchedMethods) throws IllegalClassFormatException {
+		
+		if(matchedMethods.isEmpty()) {
+			return null;
+		}
 		
 		ClassReader cr = new ClassReader(classfileBuffer);
 		
@@ -78,26 +74,16 @@ public class AdvisorTransformer extends AbstractMatcherAndTransformer implements
 		return cw.toByteArray();
 	}
 	
-	protected ClassVisitor getClassAdvisorWriter(String className, Set<MethodDescriber> matchedMethods, ClassWriter cw) {
+	protected ClassVisitor getClassAdvisorWriter(String className, Set<MatchedMethod> matchedMethods, ClassWriter cw) {
 		return new ClassAdvisorWriter(className, matchedMethods, cw);
-	}
-	
-	protected void notifyListeners(String className, String method, String desc) {
-		for(IMatchedListener listener : listeners) {
-			listener.matched(className, method, desc);
-		}
-	}
-	
-	public void addAdvisorMatchedListener(IMatchedListener listener) {
-		listeners.add(listener);
 	}
 	
 	private class ClassAdvisorWriter extends ClassVisitor implements Opcodes{
 		Logger logger = LoggerFactory.getLogger("ClassAdvisorWriter");
 		
 		private final String CLASS_NAME;
-		private final Set<MethodDescriber> matchedMethods;
-		public ClassAdvisorWriter(String className, Set<MethodDescriber> matchedMethods, ClassVisitor cv) {
+		private final Set<MatchedMethod> matchedMethods;
+		public ClassAdvisorWriter(String className, Set<MatchedMethod> matchedMethods, ClassVisitor cv) {
 			super(ASM5, cv);
 			this.CLASS_NAME = className;
 			this.matchedMethods = matchedMethods;
@@ -108,8 +94,11 @@ public class AdvisorTransformer extends AbstractMatcherAndTransformer implements
 			MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
 			
 			boolean isMatched = false;
-			
-			for(MethodDescriber methodDescr : matchedMethods) {
+			Iterator<MatchedMethod> it = matchedMethods.iterator();
+			MatchedMethod mm = null;
+			while(it.hasNext()) {
+				mm = it.next();
+				MethodDescriber methodDescr = mm.getMethodDescriber();
 				if(methodDescr.getName().equals(name) && methodDescr.getDescriptor().equals(desc)) {
 					isMatched = true;
 					break;
@@ -120,16 +109,13 @@ public class AdvisorTransformer extends AbstractMatcherAndTransformer implements
 				return mv;
 			}
 			
-			notifyListeners(CLASS_NAME, name, desc);
+			logger.info("Transforming method {}.{}{} ", CLASS_NAME, name, desc);
 			
-			logger.info("Transforming method {}.{}{} isMatch:{}", CLASS_NAME, name, desc, isMatched);
-			
-			
-			return getMethodAdvisorWriter(mv, access, name, desc);
+			return getMethodAdvisorWriter(mv, access, name, desc, mm.getContext());
 		}
 		
-		protected MethodVisitor getMethodAdvisorWriter(MethodVisitor mv, int access, String name, String desc) {
-			return new MethodAdvisorWriter(CLASS_NAME, mv, access, name, desc, trace);
+		protected MethodVisitor getMethodAdvisorWriter(MethodVisitor mv, int access, String name, String desc, MatcherContext context) {
+			return new MethodAdvisorWriter(CLASS_NAME, mv, access, name, desc, context);
 		}
 	}
 }

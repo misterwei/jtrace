@@ -11,8 +11,14 @@ public class Constants {
 	public static final String AGENTCLASS_PATHPREFIX = "com/github/wei/jtrace";
 	
 	public static final String ADVISOR_WEAVED_CLASS = "Lcom/github/wei/jtrace/agent/AdvisorWeaved;";
-	public static final String TRACER_WEAVED_CLASS = "Lcom/github/wei/jtrace/agent/TracerWeaved;";
 
+	public static final String MATCHER_CONTEXT_WEAVE= "context_weave";
+	public static final String MATCHER_CONTEXT_WEAVE_NONE= "none";
+	
+	public static final String MATCHER_CONTEXT_TRACE= "context_trace";
+	
+	public static final String MATCHER_CONTEXT_MATCHER_MESSAGES= "context_matcher_messages";
+	
 	public static final String ENABLED = "enabled";
 	public static final String DISABLED = "disabled";
 }

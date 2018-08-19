@@ -52,7 +52,7 @@ public class WatchValueAdviceListenerManager implements IAdviceListenerManager{
 		values.add(result);
 	}
 
-	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr) {
+	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr, Object[] matcherMessage) {
 		return new AdviceListener();
 	}
 	

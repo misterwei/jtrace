@@ -29,9 +29,9 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 		return actionManager.getActions();
 	}
 	
-	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr) {
+	public IAdviceListener create(Class<?> ownClass, Object own, String methodName, String methodDescr, Object[] matcherMessage) {
 		boolean createAction = false;
-		if(ownClass.getName().equals(matcher.getClassName())) {
+		if(ownClass.getName().equals(matcher.getMatchClassName())) {
 			createAction = true;
 		}
 		return new AdviceListener(ownClass, own, methodName, methodDescr, createAction);
@@ -90,7 +90,7 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			}
 			tracedConfig.add(key);
 			
-			adviceController.addMatcher(AdviceMatcher.newBuilder(own).addMethod(fullMethod).relateParent().matchType(MatchType.BASE).build());
+			adviceController.addMatcher(AdviceMatcher.newBuilder(own).addMethod(fullMethod).withTrace().end().relateParent().matchType(MatchType.BASE).build());
 			adviceController.refresh();
 		}
 	}

@@ -3,8 +3,10 @@ package com.github.wei.jtrace.core.transform;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -18,16 +20,21 @@ import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
 import com.github.wei.jtrace.api.transform.ITransformer;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
-import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMatchedListener;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcherWithContext;
+import com.github.wei.jtrace.api.transform.matcher.MatcherContext;
+import com.github.wei.jtrace.core.transform.matchers.Matcher;
+import com.github.wei.jtrace.core.transform.matchers.OrClassMatcher;
 import com.github.wei.jtrace.core.util.ClazzUtil;
+import com.github.wei.jtrace.core.util.Constants;
 
 public abstract class AbstractMatcherAndTransformer implements ITransformer{
 	private static Logger log = LoggerFactory.getLogger("MatcherAndTransformer");
 
-	private ConcurrentHashMap<IClassMatcher, List<IMethodMatcher>> matchers = new ConcurrentHashMap<IClassMatcher, List<IMethodMatcher>>();
+	private ConcurrentHashMap<Integer, List<Matcher> > groupMatchers = new ConcurrentHashMap<Integer, List<Matcher>>();
 
 	public abstract byte[] matchedTransform(final ClassLoader loader, IClassDescriberTree descr, Class<?> classBeingRedefined,
-			ProtectionDomain protectionDomain, byte[] classfileBuffer, Set<MethodDescriber> matchedMethods) throws IllegalClassFormatException;
+			ProtectionDomain protectionDomain, byte[] classfileBuffer, Set<MatchedMethod> matchedMethods) throws IllegalClassFormatException;
 	
 	@Override
 	public byte[] transform(ClassLoader loader, IClassDescriberTree descr, Class<?> classBeingRedefined,
@@ -35,7 +42,7 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 		ClassReader classReader = new ClassReader(classfileBuffer);
 		List<MethodDescriber> methods = ClazzUtil.extractMethodDescribers(classReader);
 		
-		Set<MethodDescriber> matchedMethods = new HashSet<MethodDescriber>();
+		Set<MatchedMethod> matchedMethods = new HashSet<MatchedMethod>();
 		try {
 			if(isMatched(descr, methods, matchedMethods)) {
 				return matchedTransform(loader, descr, classBeingRedefined, protectionDomain, classfileBuffer, matchedMethods);
@@ -48,27 +55,47 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 		return null;
 	}
 
-	private boolean isMatched(IClassDescriberTree descr, List<MethodDescriber> methods, Set<MethodDescriber> matchResult) throws ClassMatchException{
-		Set<IClassMatcher> classMatchers = matchers.keySet();
-		if(classMatchers.isEmpty()) {
+	private List<MatchedMethod> convertToMatchedMethod(int groupId, Collection<MethodDescriber> methods, MatcherContext context){
+		List<MatchedMethod> result = new ArrayList<MatchedMethod>();
+		
+		for(MethodDescriber md : methods) {
+			result.add(createMatchedMethod(groupId, md, context));
+		}
+		return result;
+	}
+	
+	private boolean isMatched(IClassDescriberTree descr, List<MethodDescriber> methods, Set<MatchedMethod> matchResult) throws ClassMatchException{
+		if(groupMatchers.isEmpty()) {
 			return false;
 		}
 		
 		boolean matched = false;
-		for(IClassMatcher matcher: classMatchers) {
-			if(matcher.matchClass(descr)) {
-				List<IMethodMatcher> methodMatchers = matchers.get(matcher);
-				//如果MethodMatchers是空，意味着全部适配
-				if(methodMatchers == null || methodMatchers.isEmpty()) {
-					matchResult.addAll(methods);
-					return true;
-				}else {
-					if(!methods.isEmpty()) {
-						List<MethodDescriber> matchedMethod = new ArrayList<MethodDescriber>();
-						boolean innerMatched = true;
+		Set<MatchedMethod> groupMatchResult = new HashSet<MatchedMethod>();
+		
+		for(Map.Entry<Integer,List<Matcher>> matcherEntry: groupMatchers.entrySet()) {
+			
+			int groupId = matcherEntry.getKey();
+			List<Matcher> matchers = matcherEntry.getValue(); 
+			for(Matcher matcher : matchers) {
+				if(matcher.matchClass(descr)) {
+					boolean innerMatched = true;
+					MatcherContext matcherContext = matcher.getContext();
+					Set<MatchedMethod> matcherMatchResult = new HashSet<MatchedMethod>();
+					List<IMethodMatcherWithContext> methodMatchers = matcher.getMethodMatchers();
+					
+					//如果MethodMatchers是空，意味着全部适配
+					if(methodMatchers.isEmpty()) {
+						matched = true;
+						matcherMatchResult.addAll(convertToMatchedMethod(groupId, methods, matcher.getContext()));
+					}else if(methods.isEmpty()){
+						//methodMatchers不是空,但是类里没有方法。说明没有适配
+						innerMatched = false;
+					}else {
+						List<MatchedMethod> matchedMethod = new ArrayList<MatchedMethod>();
 						
-						for(IMethodMatcher methodMatcher : methodMatchers) {
+						for(IMethodMatcherWithContext methodMatcher : methodMatchers) {
 							List<MethodDescriber> innerMatchedMethod = new ArrayList<MethodDescriber>();
+							
 							for(MethodDescriber m : methods) {
 								if(methodMatcher.match(m)) {
 									innerMatchedMethod.add(m);
@@ -78,44 +105,131 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 								innerMatched = false;
 								break;
 							}else {
-								matchedMethod.addAll(innerMatchedMethod);
+								MatcherContext context = new MatcherContext();
+								context.merge(matcherContext);
+								context.merge(methodMatcher.getContext());
+								
+								for(MethodDescriber md : innerMatchedMethod) {
+									matchedMethod.add(createMatchedMethod(groupId, md, context));
+								}
 							}
 						}
 						if(innerMatched) {
 							matched = true;
-							matchResult.addAll(matchedMethod);
+							matcherMatchResult.addAll(matchedMethod);
 						}
 					}
+					
+					if(!innerMatched) {
+						continue;
+					}
+					
+					IMatchedListener matchedListener = matcher.getMatchedListener();
+					if(matchedListener != null) {
+						Set<MethodDescriber> mds = new HashSet<MethodDescriber>();
+						for(MatchedMethod method : matcherMatchResult) {
+							MethodDescriber md = method.getMethodDescriber();
+							mds.add(md);
+						}
+						matchedListener.matched(descr.getClassDescriber(), mds);
+					}
+					
+					//不收录不嵌码的适配结果
+					if(!Constants.MATCHER_CONTEXT_WEAVE_NONE.equals(matcherContext.get(Constants.MATCHER_CONTEXT_WEAVE))) {
+						
+						//重新合并
+						for(MatchedMethod mm : matcherMatchResult) {
+							boolean found = false;
+							for(MatchedMethod gm : groupMatchResult) {
+								if(gm.equals(mm)) {
+									found = true;
+									gm.getContext().merge(mm.getContext());
+									break;
+								}
+							}
+							if(!found) {
+								groupMatchResult.add(mm);
+							}
+						}
+					}
+					
 				}
 			}
 		}
 		
+		matchResult.addAll(groupMatchResult);
+		
 		return matched;
+	}
+	
+	protected MatchedMethod createMatchedMethod(int groupid, MethodDescriber md, MatcherContext context) {
+		return new MatchedMethod(md, context);
 	}
 	
 	@Override
 	public boolean matchClass(IClassDescriberTree descr) {
-		Set<IClassMatcher> classMatchers = matchers.keySet();
-		for(IClassMatcher matcher: classMatchers) {
-			try {
-				if(matcher.matchClass(descr)) {
-					return true;
+		for(Map.Entry<Integer,List<Matcher>> matcherEntry: groupMatchers.entrySet()) {
+			List<Matcher> matchers = matcherEntry.getValue(); 
+			for(Matcher matcher : matchers) {
+				try {
+					if(matcher.matchClass(descr)) {
+						return true;
+					}
+				}catch(ClassMatchException e) {
+					log.error("Match class " + descr.getClassDescriber().getName() + " failed", e);
 				}
-			}catch(ClassMatchException e) {
-				log.error("Match class " + descr.getClassDescriber().getName() + " failed", e);
 			}
 		}
 		return false;
 	}
 	
-	public void addMatcher(IClassMatcher classMatcher, List<IMethodMatcher> methodMatchers) {
-		List<IMethodMatcher> _methodMatchers = matchers.get(classMatcher);
-		if(_methodMatchers == null) {
-			matchers.putIfAbsent(classMatcher, new CopyOnWriteArrayList<IMethodMatcher>());
-			_methodMatchers = matchers.get(classMatcher);
+	public void addMatcher(int groupId, Matcher matcher) {
+		List<Matcher> matchers = groupMatchers.get(groupId);
+		if(matchers == null) {
+			groupMatchers.putIfAbsent(groupId, new CopyOnWriteArrayList<Matcher>());
+			matchers = groupMatchers.get(groupId);
 		}
-		if(methodMatchers != null) {
-			_methodMatchers.addAll(methodMatchers);
+		matchers.add(matcher);
+	}
+	
+	/**
+	 * 移除了Matcher,如果要恢复Matcher适配的嵌码类。可以用返回的IClassMatcher进行refresh
+	 * @param groupId
+	 * @param id
+	 */
+	public IClassMatcher removeMatcher(int groupId, long id) {
+		List<Matcher> matchers = groupMatchers.get(groupId);
+		if(matchers == null) {
+			return null;
 		}
+		
+		List<Matcher> removed = new ArrayList<Matcher>();
+		for(Matcher m : matchers) {
+			if(m.getId() == id) {
+				removed.add(m);
+			}
+		}
+		matchers.removeAll(removed);
+		
+		if(!removed.isEmpty()) {
+			return new OrClassMatcher(removed);
+		}
+		return null;
+	}
+	
+	public IClassMatcher getGroupClassMatcher(int groupId){
+		List<Matcher> matchers = groupMatchers.get(groupId);
+		if(matchers != null) {
+			return new OrClassMatcher(matchers);
+		}
+		return null;
+	}
+	
+	public IClassMatcher removeGroupClassMatcherById(int groupId) {
+		List<Matcher> matchers = groupMatchers.remove(groupId);
+		if(matchers != null) {
+			return new OrClassMatcher(matchers);
+		}
+		return null;
 	}
 }

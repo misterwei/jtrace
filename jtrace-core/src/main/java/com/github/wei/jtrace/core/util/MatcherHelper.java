@@ -2,16 +2,19 @@ package com.github.wei.jtrace.core.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcherWithContext;
 import com.github.wei.jtrace.core.transform.matchers.BaseClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.ExtractClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.InterfaceClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodArgumentMatcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodExtractMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodMatcherWithContext;
 import com.github.wei.jtrace.core.transform.matchers.MethodNameMatcher;
 import com.google.common.base.Splitter;
 
@@ -59,6 +62,33 @@ public class MatcherHelper {
 		return methodMatchers;
 	}
 	
+	public static List<IMethodMatcherWithContext> extractMethodMatchers(Map<String, Map<String, Object>> methods) {
+		List<IMethodMatcherWithContext> methodMatchers = new ArrayList<IMethodMatcherWithContext>();
+		
+		for(Map.Entry<String, Map<String, Object>> mm: methods.entrySet()) {
+			List<IMethodMatcherWithContext> ms = extractMethodMatchers(mm.getKey(), mm.getValue());
+			if(ms != null) {
+				methodMatchers.addAll(ms);
+			}
+		}
+		return methodMatchers;
+	}
+	
+	public static List<IMethodMatcherWithContext> extractMethodMatchers(String methodStr, Map<String, Object> params) {
+		List<IMethodMatcherWithContext> methodMatchers = null;
+		if(methodStr != null) {
+			List<String> methods = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(methodStr);
+			if(methods != null && methods.size() > 0) {
+				methodMatchers = new ArrayList<IMethodMatcherWithContext>(methods.size());
+				
+				for(int i=0;i<methods.size();i++) {
+					methodMatchers.add(extractMethodMatcher(methods.get(i), params));
+				}
+			}
+		}
+		return methodMatchers;
+	}
+	
 	public static List<IMethodMatcher> extractMethodMatchers(String methodStr) {
 		List<IMethodMatcher> methodMatchers = null;
 		if(methodStr != null) {
@@ -72,6 +102,13 @@ public class MatcherHelper {
 			}
 		}
 		return methodMatchers;
+	}
+	
+	public static IMethodMatcherWithContext extractMethodMatcher(String method, Map<String, Object> params) {
+		IMethodMatcher matcher = extractMethodMatcher(method);
+		IMethodMatcherWithContext matcherWithContext = new MethodMatcherWithContext(matcher);
+		matcherWithContext.getContext().putAll(params);
+		return matcherWithContext;
 	}
 	
 	public static  IMethodMatcher extractMethodMatcher(String method) {

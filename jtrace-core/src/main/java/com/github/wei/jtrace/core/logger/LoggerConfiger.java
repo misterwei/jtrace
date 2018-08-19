@@ -30,6 +30,7 @@ public class LoggerConfiger {
 		}else{
 			logDir = new File(agentDir, "logs");
 		}	
+		logDir.mkdirs();
 		
 		levelMap.put("all", LoggerFlags.LEVEL_ALL);
 		levelMap.put("debug", LoggerFlags.LEVEL_DEBUG);
@@ -81,13 +82,13 @@ public class LoggerConfiger {
 					appender = ConsoleAppender.INSTANCE;
 					
 				}else if(type.equalsIgnoreCase("file")){
-					String path = config.getString(appenderName + ".path", logDir.getAbsolutePath() + appenderName + ".log");
+					String path = config.getString(appenderName + ".path", logDir.getAbsolutePath() + File.separator+ appenderName + ".log");
 					FileAppender fileAppender = new FileAppender(path);
 					fileAppender.open();
 					
 					appender = fileAppender;
 				}else if(type.equalsIgnoreCase("all")){
-					String path = config.getString(appenderName + ".path", logDir.getAbsolutePath() + appenderName + ".log");
+					String path = config.getString(appenderName + ".path", logDir.getAbsolutePath() + File.separator + appenderName + ".log");
 					FileAppender fileAppender = new FileAppender(path);
 					
 					AllAppender allAppender = new AllAppender();

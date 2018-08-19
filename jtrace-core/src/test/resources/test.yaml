@@ -1,0 +1,19 @@
+Bean-Classes:
+ - com.test.Test
+ 
+Weave-Signature:
+ - 
+   class: com.test.Test
+   method:
+     - method1
+     - method(2)
+     
+Weave-Listener:
+ -
+  matcher:
+    type: extract
+    class: com.test.Test
+    method:
+     - method1
+     - method(2)	
+  listener: com.test.Listener

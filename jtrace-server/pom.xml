@@ -86,7 +86,6 @@
                         </descriptorRefs>
                         <archive>
 	                        <manifestEntries>
-		                     	<Bean-Classes>com.github.wei.server.NettyRestServer</Bean-Classes>
 		                     	<Built-At>${maven.build.timestamp}</Built-At>
 	                        </manifestEntries>
                         </archive>

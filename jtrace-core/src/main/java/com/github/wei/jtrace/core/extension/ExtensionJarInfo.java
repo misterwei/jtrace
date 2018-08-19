@@ -1,40 +1,45 @@
 package com.github.wei.jtrace.core.extension;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
+
+import org.yaml.snakeyaml.Yaml;
 
 public class ExtensionJarInfo {
 	private File file;
-	private Map<String, String> attributes;
+	private Map<String, Object> attributes;
 	
 	private String jarPath;
 	private long lastModified;
+	private String name;
 	
 	private ExtensionJarInfo(File file) throws IOException{
 		this.file = file;
 		this.jarPath = file.getAbsolutePath();
 		this.lastModified = file.lastModified();
+		this.name = file.getName();
 		
-		Map<String,String> inner_attrs = new HashMap<String, String>();
 		JarFile jarFile = null;
 		try{
 			jarFile = new JarFile(file);
-			Manifest manifest = jarFile.getManifest();
-			Attributes attrs = manifest.getMainAttributes();
-			Set<Object> keys = attrs.keySet();
-			for(Object key : keys){
-				String name = key.toString();
-				inner_attrs.put(name, attrs.getValue(name));
+
+			JarEntry entry = jarFile.getJarEntry("META-INF/jtrace-extension.yaml");
+			if(entry == null) {
+				throw new FileNotFoundException("no jtrace-extension.yaml found");
 			}
 			
-			attributes = Collections.unmodifiableMap(inner_attrs);
+			InputStream in = jarFile.getInputStream(entry);
+			
+			Yaml yaml = new Yaml();
+			Map<String, Object> config = yaml.load(in);
+			
+			attributes = Collections.unmodifiableMap(config);
 			
 		}finally{
 			if(jarFile != null){
@@ -48,7 +53,7 @@ public class ExtensionJarInfo {
 		return new ExtensionJarInfo(file);
 	}
 	
-	public Map<String,String> getAttributes(){
+	public Map<String,Object> getAttributes(){
 		return attributes;
 	}
 	
@@ -56,6 +61,19 @@ public class ExtensionJarInfo {
 		return file.getAbsolutePath();
 	}
 
+	public File getFile() {
+		return file;
+	}
+	
+	public String getName() {
+		return name;
+	}
+	
+	@Override
+	public String toString() {
+		return "ExtensionJar ("+getJarPath()+") " + getAttributes();
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;

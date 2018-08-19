@@ -1,5 +1,7 @@
 package com.github.wei.jtrace.core.advisor;
 
+import java.util.List;
+
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -10,6 +12,7 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.wei.jtrace.api.transform.matcher.MatcherContext;
 import com.github.wei.jtrace.core.util.Constants;
 
 public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
@@ -41,13 +44,26 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 	private final String CLASS_NAME;
 	private String name, descr;
 	private boolean trace;
+	private List<Object> matcherMessages;
 	
-	protected MethodAdvisorWriter(String className, MethodVisitor mv, int access, String name, String desc, boolean trace) {
+	protected MethodAdvisorWriter(String className, MethodVisitor mv, int access, String name, String desc, MatcherContext context) {
 		super(ASM5, mv, access, name, desc);
 		this.CLASS_NAME = className;
 		this.name = name;
 		this.descr = desc;
-		this.trace = trace;
+		
+		String weaveStr = (String)context.get(Constants.MATCHER_CONTEXT_WEAVE);
+		if("none".equals(weaveStr)) {
+			this.writable = false;
+		}
+		
+		Boolean traceB = (Boolean)context.get(Constants.MATCHER_CONTEXT_TRACE);
+		if(Boolean.TRUE.equals(traceB)) {
+			this.trace = true;
+		}
+		
+		matcherMessages = (List<Object>)context.getList(Constants.MATCHER_CONTEXT_MATCHER_MESSAGES);
+		
 	}
 
 	/**
@@ -99,8 +115,43 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 			
     }
     
+    private Type pushBasicOrString(Object value) {
+    	if(value == null) {
+    		pushNull();
+    		return TYPE_OBJECT;
+    	}
+    	
+    	Class<?> clazz = value.getClass();
+    	if(clazz.equals(Integer.class) || clazz.equals(Integer.TYPE) ) {
+    		push((Integer)value);
+    		return Type.INT_TYPE;
+    	}else if(clazz.equals(Long.class) || clazz.equals(Long.TYPE)) {
+    		push((Long)value);
+    		return Type.LONG_TYPE;
+    	}else if(clazz.equals(Float.class) || clazz.equals(Float.TYPE)) {
+    		push((Float)value);
+    		return Type.FLOAT_TYPE;
+    	}else if(clazz.equals(Double.class) || clazz.equals(Double.TYPE)) {
+    		push((Double)value);
+    		return Type.DOUBLE_TYPE;
+    	}else if(clazz.equals(Character.class) || clazz.equals(Character.TYPE)) {
+    		push((Character)value);
+    		return Type.CHAR_TYPE;
+    	}else if(clazz.equals(Short.class) || clazz.equals(Short.TYPE)) {
+    		push((Short)value);
+    		return Type.SHORT_TYPE;
+    	}else if(clazz.equals(Byte.class) || clazz.equals(Byte.TYPE)) {
+    		push((Byte)value);
+    		return Type.BYTE_TYPE;
+    	}else {
+    		push(String.valueOf(value));
+    		return TYPE_STRING;
+    	}
+    	
+    }
+    
     private void loadInvokeArgs() {
-    	push(4);
+    	push(5);
     	newArray(TYPE_OBJECT);
     	
     	dup();
@@ -127,6 +178,32 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 		push(descr);
 		arrayStore(TYPE_STRING);
 		
+		dup();
+		push(4);
+		
+		push(matcherMessages.size());
+		newArray(TYPE_OBJECT);
+		for(int i=0;i<matcherMessages.size();i++) {
+			dup();
+			push(i);
+			
+			Object[] matcherMessage = (Object[])matcherMessages.get(i);
+			push(matcherMessage.length);
+			newArray(TYPE_OBJECT);
+			
+			for(int j=0;j<matcherMessage.length;j++) {
+				dup();
+				push(j);
+				
+				Object obj = matcherMessage[j];
+				Type type = pushBasicOrString(obj);
+				box(type);
+				arrayStore(TYPE_OBJECT);
+			}
+			
+			arrayStore(TYPE_OBJECT_ARRAY);
+		}
+		arrayStore(TYPE_OBJECT);
     }
     
     
@@ -208,10 +285,6 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 		
 		markWeaved(Constants.ADVISOR_WEAVED_CLASS);
 		
-		if(trace) {
-			markWeaved(Constants.TRACER_WEAVED_CLASS);
-		}
-		
 		loadAdvisorInvokerMethod();
 		
 		//调用静态方法AdvisorInvoker.onMethonBegin(),第一个参数为NULL
@@ -249,7 +322,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
         mark(beginLabel);
         
         if(logger.isDebugEnabled()) {
-        	logger.debug("transform method {}.{}{} enter, advice var index:{}", CLASS_NAME, name, descr, adviceLocalIndex);
+        	logger.debug("Transforming method {}.{}{} enter, advice var index:{}", CLASS_NAME, name, descr, adviceLocalIndex);
         }
 	}
 	
@@ -268,7 +341,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
             unboxReturn(opcode);
             
             if(logger.isDebugEnabled()) {
-            	logger.debug("transform method {}.{}{} exit", CLASS_NAME, name, descr);
+            	logger.debug("Transforming method {}.{}{} exit", CLASS_NAME, name, descr);
             }
 		}
 	}
@@ -302,7 +375,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 	public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
 		if(writable && trace && adviceLocalIndex != -1) {
 			if(logger.isDebugEnabled()) {
-				logger.debug("transform method {}.{}{} invoke {}.{}{}, advice var index:{}", CLASS_NAME, this.name, descr, owner, name, desc, adviceLocalIndex);
+				logger.debug("Transforming method {}.{}{} invoke {}.{}{}, advice var index:{}", CLASS_NAME, this.name, descr, owner, name, desc, adviceLocalIndex);
 			}
 			loadLocal(adviceLocalIndex);
 			if(lineNumber != null) {
@@ -316,10 +389,6 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 			push(desc);
 			push(itf);
 			invokeInterface(TYPE_IADVICE, METHOD_IADVICE_ONINVOKE);
-		}else {
-			if(logger.isDebugEnabled()) {
-				logger.debug("transform method {}.{}{} invoke {}.{}{}, advice var index:{}, skiped.", CLASS_NAME, this.name, descr, owner, name, desc, adviceLocalIndex);
-			}
 		}
 		super.visitMethodInsn(opcode, owner, name, desc, itf);
 	}
@@ -327,7 +396,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 	@Override
 	public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 		if(Constants.ADVISOR_WEAVED_CLASS.equals(desc)) {
-			logger.info("Transform advisor class {} method {}{} will be skiped, It has been written", CLASS_NAME, name, descr);
+			logger.info("Transforming advisor class {} method {}{} will be skiped, It has been written", CLASS_NAME, name, descr);
 			writable = false;
 		}
 		return super.visitAnnotation(desc, visible);

@@ -1,8 +1,14 @@
 package com.github.wei.jtrace.api.advice;
 
+import java.util.Map;
+
 public interface IAdviceManager {
 	
-	public void registAdviceListener(final IAdviceListenerManager listener, boolean trace) throws Exception;
+	public int registAdviceListener(final IAdviceListenerManager listener) throws Exception;
 	
-	public void removeAdviceListener(IAdviceListenerManager listener);
+	public IAdviceListenerManager removeAdviceListener(int id);
+	
+	public IAdviceListenerManager getAdviceListener(int id);
+
+	public Map<Integer, IAdviceListenerManager> getAdviceListeners();
 }

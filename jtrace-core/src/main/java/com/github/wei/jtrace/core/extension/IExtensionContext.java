@@ -5,5 +5,5 @@ public interface IExtensionContext {
 	
 	String getJarName();
 	
-	
+	ExtensionJarInfo getJarInfo();
 }

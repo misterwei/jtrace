@@ -12,6 +12,8 @@ import com.github.wei.jtrace.api.exception.BeanCheckException;
 import com.github.wei.jtrace.api.exception.BeanInstantiationException;
 import com.github.wei.jtrace.api.exception.BeanProcessException;
 import com.github.wei.jtrace.core.advisor.AdviceManager;
+import com.github.wei.jtrace.core.advisor.ListAdviceCommand;
+import com.github.wei.jtrace.core.advisor.RemoveAdviceCommand;
 import com.github.wei.jtrace.core.beans.DefaultBeanFactory;
 import com.github.wei.jtrace.core.clazz.ClassDetailCommand;
 import com.github.wei.jtrace.core.clazz.ClassFinderManager;
@@ -97,6 +99,9 @@ public class JtraceLauncher {
 		//扩展服务
 		beanFactory.registBean(ExtensionService.class);
 		beanFactory.registBean(BeanClassLoaderService.class);
+		
+		beanFactory.registBean(ListAdviceCommand.class);
+		beanFactory.registBean(RemoveAdviceCommand.class);
 	}
 	
 }
