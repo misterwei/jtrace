@@ -18,6 +18,7 @@ import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.api.transform.matcher.IMatchedListener;
 import com.github.wei.jtrace.core.extension.ExtensionJarInfo;
+import com.github.wei.jtrace.weave.api.IWeaveListener;
 
 public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 	static Logger log = LoggerFactory.getLogger("WeaveAdviceListenerManager");
@@ -54,7 +55,12 @@ public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 			String className = (String)matcherMessage[1];
 			Class<?> clazz = loader.loadClass(className);
 			
-			return (IAdviceListener)clazz.newInstance();
+			IAdviceListener listener = (IAdviceListener)clazz.newInstance();
+			if(listener instanceof IWeaveListener) {
+				((IWeaveListener)listener).init(ownClass, own, methodName, methodDescr);
+			}
+			
+			return listener;
 		}catch(Exception e) {
 			log.warn("create advice listener failed", e);
 		}
