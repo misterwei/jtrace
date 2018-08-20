@@ -28,12 +28,12 @@ import com.github.wei.jtrace.core.transform.matchers.ExtractClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.Matcher;
 import com.github.wei.jtrace.core.transform.matchers.MethodArgumentMatcher;
 
-public class TransformTest extends AbstractMatcherAndTransformer{
+public class TransformTest2 extends AbstractMatcherAndTransformer{
 	static Logger log = LoggerFactory.getLogger("TransformTest");
 
-	public TransformTest() {
+	public TransformTest2() {
 		List<IMethodMatcher> methodMatchers = new ArrayList<IMethodMatcher>();
-		methodMatchers.add(new MethodArgumentMatcher("print", 1));
+		methodMatchers.add(new MethodArgumentMatcher("testC", 1));
 		addMatcher(-1, new Matcher(new ExtractClassMatcher("com/test/web/classes/ClassC"), methodMatchers));
 	}
 	
@@ -41,7 +41,7 @@ public class TransformTest extends AbstractMatcherAndTransformer{
 	public byte[] matchedTransform(ClassLoader loader, IClassDescriberTree descr, Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, byte[] classfileBuffer,final Set<MatchedMethod> matchedMethods)
 			throws IllegalClassFormatException {
-		log.info("********** start transform {}, and sleep 10000", descr);
+		log.info("********** start transform {}", descr);
 		
 		ClassReader cr = new ClassReader(classfileBuffer);
 		
@@ -68,25 +68,19 @@ public class TransformTest extends AbstractMatcherAndTransformer{
 				return new AdviceAdapter(Opcodes.ASM5, new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions), access, name, desc) {
 					
 					@Override
-					protected void onMethodEnter() {
-						log.info("************ method enter {}", name);
+					protected void onMethodExit(int opcode) {
+						log.info("************ method exit {}", name);
 						
 				        getStatic(Type.getType(System.class), "out", Type.getType(PrintStream.class));
-				        push("this is a test");
+				        push(name + " end, this is a test");
 				        invokeVirtual(Type.getType(PrintStream.class), Method.getMethod("void println(String)"));
 					}
-					
 
 				};
 			}
 			
 		}, ClassReader.EXPAND_FRAMES);
 		
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 		log.info("********** transform {} finished", descr);
 
 		return cw.toByteArray();

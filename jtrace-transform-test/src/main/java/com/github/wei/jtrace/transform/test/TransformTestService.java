@@ -23,6 +23,7 @@ public class TransformTestService implements IService{
 	public boolean start(IConfig config) {
 		try {
 			transformService.registTransformer(new TransformTest(), false);
+			transformService.registTransformer(new TransformTest2(), true);
 		} catch (IllegalAccessException e) {
 			log.error("transform-test regist failed ", e);
 		}
