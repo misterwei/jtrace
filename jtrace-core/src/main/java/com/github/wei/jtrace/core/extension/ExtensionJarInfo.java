@@ -18,6 +18,7 @@ public class ExtensionJarInfo {
 	private long lastModified;
 	private String name;
 	
+	
 	private ExtensionJarInfo(File file) throws IOException{
 		this.file = file;
 		this.jarPath = file.getAbsolutePath();

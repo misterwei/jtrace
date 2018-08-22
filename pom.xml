@@ -116,5 +116,6 @@
 	<module>jtrace-weave</module>
 	<module>jtrace-logger</module>
 	<module>jtrace-transform-test</module>
+	<module>jtrace-transform-test2</module>
   </modules>
 </project>

@@ -12,8 +12,10 @@ import com.github.wei.jtrace.core.extension.ExtensionJarInfo;
 public class WeaveClassLoader extends URLClassLoader{
 	static Logger log = LoggerFactory.getLogger("WeaveClassLoader");
 	private ClassLoader jtraceClassLoader;
+	private String name;
 	public WeaveClassLoader(ClassLoader targetClasLoader, ClassLoader jtraceClassLoader, ExtensionJarInfo jarInfo) throws MalformedURLException {
 		super(new URL[] {jarInfo.getFile().toURI().toURL()}, targetClasLoader);
+		this.name = jarInfo.getName();
 		this.jtraceClassLoader = jtraceClassLoader;
 	}
 
@@ -27,5 +29,11 @@ public class WeaveClassLoader extends URLClassLoader{
 			}
 		}
 		return super.loadClass(name, resolve);
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		log.info("ClassLoader for {} will finalize", name);
+		super.finalize();
 	}
 }

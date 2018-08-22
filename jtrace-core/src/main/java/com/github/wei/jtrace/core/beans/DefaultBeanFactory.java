@@ -19,6 +19,7 @@ import com.github.wei.jtrace.api.beans.IBeanFactory;
 import com.github.wei.jtrace.api.beans.IBeanPostProcessor;
 import com.github.wei.jtrace.api.beans.IBeanProcessor;
 import com.github.wei.jtrace.api.beans.IBeanProcessorChain;
+import com.github.wei.jtrace.api.beans.IDestroyedBean;
 import com.github.wei.jtrace.api.beans.IProcessingBean;
 import com.github.wei.jtrace.api.exception.BeanCheckException;
 import com.github.wei.jtrace.api.exception.BeanInstantiationException;
@@ -218,6 +219,11 @@ public class DefaultBeanFactory implements IBeanFactory{
 				continue;
 			}
 			obj = cloneProcessorChain(chain).doProcess(obj);
+		}
+		
+		//Bean后处理完成通知
+		if(obj instanceof IDestroyedBean){
+			((IDestroyedBean) obj).afterDestroyComplete();
 		}
 	}
 	

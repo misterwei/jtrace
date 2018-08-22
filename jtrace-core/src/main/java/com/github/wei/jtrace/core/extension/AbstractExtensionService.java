@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -21,7 +22,7 @@ public abstract class AbstractExtensionService implements IAsyncService{
 	
 	private volatile boolean running = false;
 	
-	protected final Map<File, ExtensionJarInfo> jarInfos = new HashMap<File, ExtensionJarInfo>();
+	protected final ConcurrentHashMap<File, ExtensionJarInfo> jarInfos = new ConcurrentHashMap<File, ExtensionJarInfo>();
 	
 	private long scanInterval = 10000;
 	
@@ -87,6 +88,7 @@ public abstract class AbstractExtensionService implements IAsyncService{
 						log.info("Scanned jar file: {}", file);
 						try {
 							ExtensionJarInfo jarInfo = ExtensionJarInfo.create(file);
+							
 							jars.put(file, jarInfo);
 						} catch (Exception e) {
 							throw new Exception("Can't resolve this jar ["+file.getAbsolutePath()+"]", e);
@@ -126,4 +128,10 @@ public abstract class AbstractExtensionService implements IAsyncService{
 	protected void  handle(Map<File, ExtensionJarInfo> jars) throws Exception{}
 	
 	protected abstract void  handle(ExtensionJarInfo jarInfo);
+	
+	protected void remove(ExtensionJarInfo jarInfo) {
+		File f = jarInfo.getFile();
+		jarInfos.remove(f);
+		f.renameTo(new File(f.getParentFile(), f.getName()+".removed"));
+	}
 }

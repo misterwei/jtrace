@@ -86,6 +86,7 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 		if(matcher != null) {
 			transformService.refreshTransformer(matcher);
 		}
+		
 		return listeners.remove(id);
 	}
 	
