@@ -2,6 +2,7 @@ package com.github.wei.jtrace.core.extension;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +86,12 @@ public abstract class AbstractExtensionService implements IAsyncService{
 						if(jarInfos.containsKey(file)){
 							continue;
 						}
+						
+						File removedFalg = new File(file.getAbsolutePath()+".removed");
+						if(removedFalg.exists()) {
+							continue;
+						}
+						
 						log.info("Scanned jar file: {}", file);
 						try {
 							ExtensionJarInfo jarInfo = ExtensionJarInfo.create(file);
@@ -129,9 +136,14 @@ public abstract class AbstractExtensionService implements IAsyncService{
 	
 	protected abstract void  handle(ExtensionJarInfo jarInfo);
 	
-	protected void remove(ExtensionJarInfo jarInfo) {
+	public void remove(ExtensionJarInfo jarInfo) {
 		File f = jarInfo.getFile();
-		jarInfos.remove(f);
-		f.renameTo(new File(f.getParentFile(), f.getName()+".removed"));
+		File nf = new File(f.getAbsolutePath() + ".removed");
+		try {
+			nf.createNewFile();
+			jarInfos.remove(f);
+		} catch (IOException e) {
+			log.error("Failed to create " + f.getName() +" removed-flag file", e);
+		}
 	}
 }

@@ -32,11 +32,15 @@ public class ExtensionJarInfo {
 			JarEntry entry = jarFile.getJarEntry("META-INF/jtrace-extension.yaml");
 			if(entry != null) {
 				InputStream in = jarFile.getInputStream(entry);
-				
-				Yaml yaml = new Yaml();
-				Map<String, Object> config = yaml.load(in);
-				
-				attributes = Collections.unmodifiableMap(config);
+				try {
+					Yaml yaml = new Yaml();
+					Map<String, Object> config = yaml.load(in);
+					attributes = Collections.unmodifiableMap(config);
+				}finally {
+					try {
+						in.close();
+					}catch(Exception e) {}
+				}
 			}else {
 				attributes = Collections.emptyMap();
 			}

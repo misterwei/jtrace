@@ -15,6 +15,7 @@ import com.github.wei.jtrace.api.advice.AdviceMatcher.MatchType;
 import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
+import com.github.wei.jtrace.api.advice.IAdviceListenerManagerRemoved;
 import com.github.wei.jtrace.api.advice.IAdviceManager;
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
@@ -87,7 +88,11 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 			transformService.refreshTransformer(matcher);
 		}
 		
-		return listeners.remove(id);
+		IAdviceListenerManager manager = listeners.remove(id);
+		if(manager instanceof IAdviceListenerManagerRemoved) {
+			((IAdviceListenerManagerRemoved)manager).onRemoved();
+		}
+		return manager;
 	}
 	
 	@Override

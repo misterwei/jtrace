@@ -1,12 +1,8 @@
 package com.github.wei.jtrace.weave;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,41 +12,15 @@ import com.github.wei.jtrace.api.advice.AdviceMatcher.MatchType;
 import com.github.wei.jtrace.api.advice.IAdviceManager;
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
-import com.github.wei.jtrace.api.beans.IDestroyedBean;
-import com.github.wei.jtrace.api.beans.IProcessingBean;
 import com.github.wei.jtrace.core.extension.AbstractExtensionService;
 import com.github.wei.jtrace.core.extension.ExtensionJarInfo;
 
 @Bean
-public class WeaveService extends AbstractExtensionService implements IProcessingBean, IDestroyedBean{
+public class WeaveService extends AbstractExtensionService {
 	static Logger log = LoggerFactory.getLogger("WeaveService");
 	
 	@AutoRef
 	private IAdviceManager adviceManager;
-	
-	private ReferenceQueue<WeaveAdviceListenerManager> queue = new ReferenceQueue<WeaveAdviceListenerManager>();
-	
-	private ConcurrentHashMap<PhantomReference<WeaveAdviceListenerManager>, ExtensionJarInfo> jarInfoMap = new ConcurrentHashMap<PhantomReference<WeaveAdviceListenerManager>, ExtensionJarInfo>();
-	
-	private boolean finalizeThreadRunning = true;
-	
-	private Thread finalizeThread = new Thread("Weave-Finalize-Thread") {
-		@Override
-		public void run() {
-			try {
-				while(finalizeThreadRunning) {
-					Reference<? extends WeaveAdviceListenerManager> ref = queue.remove();
-					ExtensionJarInfo jarInfo = jarInfoMap.remove(ref);
-					
-					remove(jarInfo);
-				}
-			} catch (InterruptedException e) {
-				
-			}
-			log.info("finalize thread is stoped");
-		}
-		
-	};
 	
 	public WeaveService() {
 		super("weave");
@@ -129,30 +99,11 @@ public class WeaveService extends AbstractExtensionService implements IProcessin
 		}
 		
 		try {
-			WeaveAdviceListenerManager manager = new WeaveAdviceListenerManager(signatures, weaveListeners, jarInfo);
-			
-			PhantomReference<WeaveAdviceListenerManager> ph = new PhantomReference<WeaveAdviceListenerManager>(manager, queue);
-			
-			jarInfoMap.put(ph, jarInfo);
-			
-			adviceManager.registAdviceListener(manager);
+			adviceManager.registAdviceListener(new WeaveAdviceListenerManager(this, signatures, weaveListeners, jarInfo));
 		} catch (Exception e) {
 			log.warn("regist advice listener failed", e);
 		}
 		
-	}
-
-	@Override
-	public void afterProcessComplete() {
-		finalizeThread.start();
-	}
-
-	@Override
-	public void afterDestroyComplete() {
-		this.finalizeThreadRunning = false;
-		try {
-			finalizeThread.interrupt();
-		}catch(Exception e) {}
 	}
 
 }

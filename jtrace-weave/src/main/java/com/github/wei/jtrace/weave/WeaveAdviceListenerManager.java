@@ -14,13 +14,14 @@ import com.github.wei.jtrace.api.advice.AdviceMatcher;
 import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
+import com.github.wei.jtrace.api.advice.IAdviceListenerManagerRemoved;
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.api.transform.matcher.IMatchedListener;
 import com.github.wei.jtrace.core.extension.ExtensionJarInfo;
 import com.github.wei.jtrace.weave.api.IWeaveListener;
 
-public class WeaveAdviceListenerManager implements IAdviceListenerManager{
+public class WeaveAdviceListenerManager implements IAdviceListenerManager, IAdviceListenerManagerRemoved{
 	static Logger log = LoggerFactory.getLogger("WeaveAdviceListenerManager");
 	
 	private final List<AdviceMatcher.Builder> matchers;
@@ -33,13 +34,15 @@ public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 	private final ExtensionJarInfo jarInfo;
 	
 	private IAdviceController controller;
+	private WeaveService weaveService;
 	
-	public WeaveAdviceListenerManager(List<AdviceMatcher.Builder> matchers, List<AdviceMatcher.Builder> advisors, ExtensionJarInfo jarInfo) {
+	public WeaveAdviceListenerManager(WeaveService weaveService, List<AdviceMatcher.Builder> matchers, List<AdviceMatcher.Builder> advisors, ExtensionJarInfo jarInfo) {
 		this.matchers = matchers;
 		this.SIZE = matchers.size();
 		
 		this.advisors = advisors;
 		this.jarInfo = jarInfo;
+		this.weaveService = weaveService;
 	}
 	
 	@Override
@@ -109,5 +112,13 @@ public class WeaveAdviceListenerManager implements IAdviceListenerManager{
 	@Override
 	public String toString() {
 		return "Weave@" + hashCode() + " - " + jarInfo.getName();
+	}
+
+	@Override
+	public void onRemoved() {
+		if(this.weaveService != null) {
+			this.weaveService.remove(jarInfo);
+			this.weaveService = null;
+		}
 	}
 }
