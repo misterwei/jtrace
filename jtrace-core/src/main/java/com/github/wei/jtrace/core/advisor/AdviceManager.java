@@ -181,12 +181,23 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 			
 			@Override
 			public void removeMatcher(long id) {
-				transformer.removeMatcher(managerId, id);
+				IClassMatcher matcher = transformer.removeMatcher(managerId, id);
+				if(matcher != null) {
+					transformService.refreshTransformer(matcher);
+				}
+			}
+			
+			@Override
+			public void refresh(long matcherId) {
+				IClassMatcher matcher = transformer.getMatcher(managerId, matcherId);
+				if(matcher != null) {
+					transformService.refreshTransformer(matcher);
+				}
 			}
 			
 			@Override
 			public void refresh() {
-				IClassMatcher matcher = transformer.getGroupClassMatcher(managerId);
+				IClassMatcher matcher = transformer.getGroupMatcher(managerId);
 				if(matcher != null) {
 					transformService.refreshTransformer(matcher);
 				}
@@ -204,6 +215,9 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 		return managerId;
 	}
 	
+	/**
+	 * 注册transformer，并提供切面入口
+	 */
 	@Override
 	public void afterProcessComplete() {
 		try {

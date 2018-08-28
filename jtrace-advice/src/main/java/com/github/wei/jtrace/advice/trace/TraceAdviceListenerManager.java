@@ -1,6 +1,9 @@
 package com.github.wei.jtrace.advice.trace;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
@@ -42,6 +45,8 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 		private String method;
 		private String desc;
 		private boolean createAction;
+		private Map<String, List<String>> matches = new HashMap<String, List<String> > ();
+		
 		public AdviceListener(Class<?> ownClass, Object own, String methodName, String methodDescr, boolean createAction) {
 			this.own = ownClass.getName();
 			this.method = methodName;
@@ -62,6 +67,7 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			if(action != null) {
 				action.finishTrace();
 			}
+			refreshChildClass();
 			return obj;
 		}
 
@@ -70,8 +76,25 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			if(action != null) {
 				action.finishTrace();
 			}
+			refreshChildClass();
 		}
 
+		private void refreshChildClass() {
+			long id = System.currentTimeMillis();
+			
+			for(Map.Entry<String, List<String>> mm : matches.entrySet()) {
+				for(String fullMethod : mm.getValue()) {
+					AdviceMatcher.Builder mb = AdviceMatcher.newBuilder(mm.getKey()).withId(id);
+					mb.addMethod(fullMethod).withTrace().end();
+					mb.relateParent().matchType(MatchType.BASE);
+					
+					AdviceMatcher m = mb.build();
+					adviceController.addMatcher(m);
+				}
+			}
+			adviceController.refresh(id);
+		}
+		
 		public void onInvoke(Integer lineNumber, String own, String name, String desc, boolean itf) {
 			if(log.isDebugEnabled()) {
 				log.debug("invoke ({}){}.{}{}", new Object[] {lineNumber, own, name, desc});
@@ -92,8 +115,13 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			}
 			tracedConfig.add(key);
 			
-			adviceController.addMatcher(AdviceMatcher.newBuilder(own).addMethod(fullMethod).withTrace().end().relateParent().matchType(MatchType.BASE).build());
-			adviceController.refresh();
+			List<String> methods = matches.get(own);
+			if(methods == null) {
+				methods = new ArrayList<String>();
+				matches.put(own, methods);
+			}
+			methods.add(fullMethod);
+			
 		}
 	}
 

@@ -223,12 +223,32 @@ public abstract class AbstractMatcherAndTransformer implements ITransformer{
 		return null;
 	}
 	
+	public IClassMatcher getMatcher(int groupId, long id) {
+		List<Matcher> matchers = groupMatchers.get(groupId);
+		if(matchers == null) {
+			return null;
+		}
+		
+		List<Matcher> result = new ArrayList<Matcher>();
+		for(Matcher m : matchers) {
+			if(m.getId() == id) {
+				result.add(m);
+			}
+		}
+		
+		if(!result.isEmpty()) {
+			return new OrClassMatcher(result);
+		}
+		
+		return null;
+	}
+	
 	/**
 	 * 如果没有找到Matcher，则返回NULL
 	 * @param groupId
 	 * @return
 	 */
-	public IClassMatcher getGroupClassMatcher(int groupId){
+	public IClassMatcher getGroupMatcher(int groupId){
 		List<Matcher> matchers = groupMatchers.get(groupId);
 		if(matchers != null) {
 			return new OrClassMatcher(matchers);
