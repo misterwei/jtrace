@@ -7,12 +7,14 @@ public class ClassDescriber {
 	private String modifier;
 	private String[] interfaces;
 	private String superClass;
+	private String[] annotations;
 	
-	public ClassDescriber(String name, String modifier, String superClass, String[] interfaces) {
+	public ClassDescriber(String name, String modifier, String superClass, String[] interfaces, String[] annotations) {
 		this.name = name;
 		this.modifier = modifier;
 		this.superClass = superClass;
 		this.interfaces = interfaces;
+		this.annotations = annotations;
 	}
 	
 	public String getName() {
@@ -26,6 +28,9 @@ public class ClassDescriber {
 	}
 	public String getSuperClass() {
 		return superClass;
+	}
+	public String[] getAnnotations() {
+		return annotations;
 	}
 
 	@Override

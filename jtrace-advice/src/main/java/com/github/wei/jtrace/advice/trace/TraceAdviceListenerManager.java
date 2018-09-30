@@ -84,8 +84,8 @@ public class TraceAdviceListenerManager implements IAdviceListenerManager{
 			
 			for(Map.Entry<String, List<String>> mm : matches.entrySet()) {
 				for(String fullMethod : mm.getValue()) {
-					AdviceMatcher.Builder mb = AdviceMatcher.newBuilder(mm.getKey()).withId(id);
-					mb.addMethod(fullMethod).withTrace().end();
+					AdviceMatcher.Builder mb = AdviceMatcher.newBuilderForClassName(mm.getKey()).withId(id);
+					mb.addMethod().matchName(fullMethod).trace().end();
 					mb.relateParent().matchType(MatchType.BASE);
 					
 					AdviceMatcher m = mb.build();

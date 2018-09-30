@@ -17,6 +17,8 @@ public class Constants {
 	
 	public static final String MATCHER_CONTEXT_TRACE= "context_trace";
 	
+	public static final String MATCHER_CONTEXT_REWRITE_ARGS= "context_rewrite_args";
+	
 	public static final String MATCHER_CONTEXT_MATCHER_MESSAGES= "context_matcher_messages";
 	
 	public static final String ENABLED = "enabled";

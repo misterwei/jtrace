@@ -2,17 +2,21 @@ package com.github.wei.jtrace.core.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.MethodDescriber;
@@ -35,7 +39,18 @@ public class ClazzUtil {
 			}
 		}
 		String superClassName = supperClazz == null? null : supperClazz.getName();
-		return new ClassDescriber(classNameToPath(clazz.getName()), modifier, classNameToPath(superClassName), interfaceClasses);
+		
+		String[] anns = null;
+		Annotation[]  annotations = clazz.getAnnotations();
+		if(annotations != null) {
+			anns = new String[annotations.length];
+			for(int i=0;i<annotations.length;i++) {
+				Annotation a = annotations[i];
+				anns[i] = classNameToPath(a.annotationType().getName());
+			}
+		}
+		
+		return new ClassDescriber(classNameToPath(clazz.getName()), modifier, classNameToPath(superClassName), interfaceClasses, anns);
 	}
 	
 	public static ClassInfo extractClassInfo(Class<?> clazz){
@@ -57,7 +72,17 @@ public class ClazzUtil {
 			
 			String desc = Type.getMethodDescriptor(m).replace('.', '/');
 			
-			methodInfos.add(extractMethodDescriber(m.getModifiers(), m.getName(), desc));
+			String[] anns = null;
+			Annotation[]  annotations = clazz.getAnnotations();
+			if(annotations != null) {
+				anns = new String[annotations.length];
+				for(int j=0;j<annotations.length;j++) {
+					Annotation a = annotations[j];
+					anns[j] = classNameToPath(a.annotationType().getName());
+				}
+			}
+			
+			methodInfos.add(extractMethodDescriber(m.getModifiers(), m.getName(), desc, anns));
 		}
 		
 		info.setMethods(methodInfos);
@@ -67,7 +92,24 @@ public class ClazzUtil {
 	
 	public static ClassDescriber extractClassDescriber(ClassReader classReader) {
 		String modifier = ModifierUtil.toString(classReader.getAccess());
-		return new ClassDescriber(classReader.getClassName(), modifier, classReader.getSuperName(), classReader.getInterfaces());
+		final List<String> annList = new ArrayList<String>(10);
+		classReader.accept(new ClassVisitor(Opcodes.ASM5) {
+			@Override
+			public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+				String className = Type.getType(desc).getInternalName();
+				if(!annList.contains(className)) {
+					annList.add(className);
+				}
+				return super.visitAnnotation(desc, visible);
+			}
+			
+		}, ClassReader.EXPAND_FRAMES);
+		
+		String[] anns = null;
+		if(annList.size() > 0) {
+			anns = annList.toArray(new String[annList.size()]);
+		}
+		return new ClassDescriber(classReader.getClassName(), modifier, classReader.getSuperName(), classReader.getInterfaces(), anns);
 	}
 	
 	public static ClassInfo extractClassInfo(ClassReader classReader){
@@ -83,7 +125,7 @@ public class ClazzUtil {
 		return classInfo;
 	}
 	
-	public static MethodDescriber extractMethodDescriber(int access, String name, String desc) {
+	public static MethodDescriber extractMethodDescriber(int access, String name, String desc, String[] annotations) {
 		Type[] types = Type.getArgumentTypes(desc);
 		String[] argumentTypes  = null;
 		if(types != null) {
@@ -96,22 +138,33 @@ public class ClazzUtil {
 		String returnType = Type.getReturnType(desc).getClassName().replace('.', '/');
 		String modifier = ModifierUtil.toString(access);
 		
-		return new MethodDescriber(name, modifier, argumentTypes, returnType, desc);
+		return new MethodDescriber(name, modifier, argumentTypes, returnType, desc, annotations);
 	}
 	
 	public static List<MethodDescriber> extractMethodDescribers(ClassReader classReader){
 		final List<MethodDescriber> methods = new ArrayList<MethodDescriber>();
-
-		classReader.accept(new ClassVisitor(Opcodes.ASM5) {
-			@Override
-			public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-					String[] exceptions) {
-				
-				MethodDescriber methodInfo = extractMethodDescriber(access, name, desc);
-				methods.add(methodInfo);
-				return super.visitMethod(access, name, desc, signature, exceptions);
+		
+		ClassNode cn = new ClassNode(Opcodes.ASM5);
+		classReader.accept(cn, ClassReader.EXPAND_FRAMES);
+		List<MethodNode> mns = cn.methods;
+		
+		for(MethodNode mn : mns) {
+			List<String> annList = new ArrayList<String>(10);
+			List<AnnotationNode> ans = mn.visibleAnnotations;
+			if(ans != null) {
+				for(AnnotationNode an : ans) {
+					annList.add(Type.getType(an.desc).getInternalName());
+				}
 			}
-		}, ClassReader.EXPAND_FRAMES);	
+			
+			String[] anns = null;
+			if(annList.size() > 0) {
+				anns = annList.toArray(new String[annList.size()]);
+			}
+			
+			MethodDescriber methodInfo = extractMethodDescriber(mn.access, mn.name, mn.desc, anns);
+			methods.add(methodInfo);
+		}
 		
 		return methods;
 	}

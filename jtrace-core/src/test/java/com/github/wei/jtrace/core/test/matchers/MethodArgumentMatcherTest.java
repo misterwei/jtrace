@@ -16,7 +16,7 @@ public class MethodArgumentMatcherTest extends BaseTest{
 	public void testArgument() {
 		IMethodMatcher methodMatcher = new MethodArgumentMatcher("test", 2);
 		
-		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V");
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V", null);
 
 		assertTrue(methodMatcher.match(methodDescriber));
 	}
@@ -25,7 +25,7 @@ public class MethodArgumentMatcherTest extends BaseTest{
 	public void testRegex() {
 		IMethodMatcher methodMatcher = new MethodArgumentMatcher("^test.*", 2);
 		
-		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V");
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V", null);
 
 		assertTrue(methodMatcher.match(methodDescriber));
 	}

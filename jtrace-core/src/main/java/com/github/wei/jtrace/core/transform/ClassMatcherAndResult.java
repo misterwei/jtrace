@@ -11,8 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,15 +71,10 @@ public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
 		if(methodMatchers != null && methodMatchers.length > 0) {
 			final Set<IMethodMatcher> matchedMatchers = new HashSet<IMethodMatcher>();
 			
-			cr.accept(new ClassVisitor(Opcodes.ASM5) {
-				
-				public org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-					MethodDescriber methodDescr = ClazzUtil.extractMethodDescriber(access, name, desc);
-					matchMethod(methodDescr, matchedMatchers, matchedMethods);
-					
-					return super.visitMethod(access, name, desc, signature, exceptions);
-				};
-			}, ClassReader.EXPAND_FRAMES);
+			List<MethodDescriber> mds = ClazzUtil.extractMethodDescribers(cr);
+			for(MethodDescriber md : mds) {
+				matchMethod(md, matchedMatchers, matchedMethods);
+			}
 			
 			//必须所有方法适配，才被认为是Class适配
 			if(methodMatchers.length == matchedMatchers.size()) {

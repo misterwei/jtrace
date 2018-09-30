@@ -1,6 +1,8 @@
 package com.github.wei.jtrace.api.advice;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.github.wei.jtrace.api.transform.matcher.IMatchedListener;
@@ -15,13 +17,14 @@ public class AdviceMatcher {
 	
 	private long id;
 	private String matchClassName;
+	private String matchAnnotation;
 	private MatchType matchType;
 	private boolean relateParent;
 	private IMatchedListener matchedListener;
 	private String message;
 	
 	private MatcherContext context = new MatcherContext();
-	private Map<String, Map<String, Object>> matchMethods = new HashMap<String, Map<String, Object>>();
+	private List<MethodAdviceMatcher> methodAdviceMatchers = new ArrayList<MethodAdviceMatcher>();
 	
 	private AdviceMatcher() {}
 	
@@ -31,6 +34,10 @@ public class AdviceMatcher {
 	
 	public String getMatchClassName() {
 		return matchClassName;
+	}
+	
+	public String getMatchAnnotation() {
+		return matchAnnotation;
 	}
 
 	public String getMessage() {
@@ -49,23 +56,53 @@ public class AdviceMatcher {
 		return relateParent;
 	}
 
-	public Map<String, Map<String, Object>> getMatchMethods() {
-		return matchMethods;
+	public List<MethodAdviceMatcher> getMatchMethods() {
+		return methodAdviceMatchers;
 	}
 
 	public IMatchedListener getMatchedListener() {
 		return matchedListener;
 	}
 	
-	public static Builder newBuilder(String className) {
-		return new Builder(className);
+	public static Builder newBuilderForClassName(String className) {
+		return new Builder(className, null);
+	}
+	
+	public static Builder newBuilderForAnnotation(String annotation) {
+		return new Builder(null, annotation);
+	}
+	
+	public static Builder newBuilder(String className, String annotation) {
+		return new Builder(className, annotation);
+	}
+	
+	public static class MethodAdviceMatcher{
+		private String name;
+		private String annotation;
+		private Map<String, Object> params = new HashMap<String, Object>();
+		
+		public String getName() {
+			return name;
+		}
+		public String getAnnotation() {
+			return annotation;
+		}
+		
+		public Object getParameter(String name) {
+			return params.get(name);
+		}
+
+		public Map<String, Object> getParameters(){
+			return params;
+		}
 	}
 	
 	public static class Builder {
 		protected AdviceMatcher matcher;
-		public Builder(String className) {
+		public Builder(String className, String annotation) {
 			matcher = new AdviceMatcher();
 			matcher.matchClassName = className;
+			matcher.matchAnnotation = annotation;
 			matcher.matchType = MatchType.EXTRACT;
 			matcher.id = System.currentTimeMillis();
 		}
@@ -90,6 +127,11 @@ public class AdviceMatcher {
 			return this;
 		}
 		
+		public Builder rewriteArgs() {
+			matcher.context.put("context_rewrite_args", true);
+			return this;
+		}
+		
 		public Builder relateParent() {
 			matcher.relateParent = true;
 			return this;
@@ -100,16 +142,9 @@ public class AdviceMatcher {
 			return this;
 		}
 		
-		public BuilderForMethod addMethod(String method) {
-			Map<String, Object> params = null;
-			if(!matcher.matchMethods.containsKey(method)) {
-				params = new HashMap<String, Object>();
-				matcher.matchMethods.put(method, params);
-			}else {
-				params = matcher.matchMethods.get(method);
-			}
-			
-			return new BuilderForMethod(this, params);
+		public BuilderForMethod addMethod() {
+			MethodAdviceMatcher mam = new MethodAdviceMatcher();
+			return new BuilderForMethod(this, mam);
 		}
 		
 		public AdviceMatcher build() {
@@ -118,18 +153,33 @@ public class AdviceMatcher {
 		
 		public static class BuilderForMethod{
 			private Builder parent;
-			private Map<String, Object> params;
-			public BuilderForMethod(Builder parent, Map<String, Object> params) {
+			private MethodAdviceMatcher mam;
+			public BuilderForMethod(Builder parent, MethodAdviceMatcher mam) {
 				this.parent = parent;
-				this.params = params;
+				this.mam = mam;
 			}
 			
-			public BuilderForMethod withTrace() {
-				this.params.put("context_trace", true);
+			public BuilderForMethod matchName(String method) {
+				this.mam.name = method;
+				return this;
+			}
+			
+			public BuilderForMethod matchAnnotation(String annotation) {
+				this.mam.annotation = annotation;
+				return this;
+			}
+			
+			public BuilderForMethod trace() {
+				this.mam.params.put("context_trace", true);
 				return this;
 			}
 			
 			public Builder end() {
+				if(this.mam.name == null && this.mam.annotation == null) {
+					return parent;
+				}
+				
+				parent.matcher.methodAdviceMatchers.add(mam);
 				return parent;
 			}
 		}

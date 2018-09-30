@@ -16,12 +16,15 @@ public class MethodDescriber implements Serializable {
 	
 	private String descriptor;
 	
-	public MethodDescriber(String name, String modifier, String[] argumentTypes, String returnType, String descriptor) {
+	private String[] annotations;
+	
+	public MethodDescriber(String name, String modifier, String[] argumentTypes, String returnType, String descriptor, String[] annotations) {
 		this.name = name;
 		this.modifier = modifier;
 		this.argumentTypes = argumentTypes;
 		this.returnType = returnType;
 		this.descriptor = descriptor;
+		this.annotations = annotations;
 	}
 	
 	public int getAccess() {
@@ -47,6 +50,10 @@ public class MethodDescriber implements Serializable {
 		return argumentTypes;
 	}
 
+	public String[] getAnnotations() {
+		return annotations;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;

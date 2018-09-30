@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.github.wei.jtrace.agent.IAdvice;
 import com.github.wei.jtrace.api.advice.AdviceMatcher;
 import com.github.wei.jtrace.api.advice.AdviceMatcher.MatchType;
+import com.github.wei.jtrace.api.advice.AdviceMatcher.MethodAdviceMatcher;
 import com.github.wei.jtrace.api.advice.IAdviceController;
 import com.github.wei.jtrace.api.advice.IAdviceListener;
 import com.github.wei.jtrace.api.advice.IAdviceListenerManager;
@@ -23,6 +24,7 @@ import com.github.wei.jtrace.api.beans.IProcessingBean;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IMatchedListener;
+import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IMethodMatcherWithContext;
 import com.github.wei.jtrace.api.transform.matcher.MatcherContext;
 import com.github.wei.jtrace.core.transform.TransformService;
@@ -30,6 +32,10 @@ import com.github.wei.jtrace.core.transform.matchers.BaseClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.ExtractClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.InterfaceClassMatcher;
 import com.github.wei.jtrace.core.transform.matchers.Matcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodAndMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodAnnotationMatcher;
+import com.github.wei.jtrace.core.transform.matchers.MethodMatcherWithContext;
+import com.github.wei.jtrace.core.transform.matchers.MethodOrMatcher;
 import com.github.wei.jtrace.core.transform.matchers.OrClassMatcher;
 import com.github.wei.jtrace.core.util.Constants;
 import com.github.wei.jtrace.core.util.IdGenerator;
@@ -134,7 +140,7 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 			@Override
 			public void addMatcher(AdviceMatcher matcher) {
 				String className = matcher.getMatchClassName().replace('.', '/');
-				Map<String, Map<String, Object>> methods = matcher.getMatchMethods();
+				List<MethodAdviceMatcher> methods = matcher.getMatchMethods();
 				
 				IClassMatcher classMatcher = null;
 				IClassMatcher relateParentMatcher = null;
@@ -164,7 +170,32 @@ public class AdviceManager implements IProcessingBean, IAdviceManager{
 				
 				List<IMethodMatcherWithContext> methodMatchers = null;
 				if(methods != null && !methods.isEmpty()) {
-					methodMatchers = MatcherHelper.extractMethodMatchers(methods);
+					methodMatchers = new ArrayList<IMethodMatcherWithContext>(methods.size());
+					for(MethodAdviceMatcher mm : methods) {
+						String ann = mm.getAnnotation();
+						String name = mm.getName();
+						
+						if(ann == null && name ==null) {
+							continue;
+						}
+						
+						IMethodMatcher methodMatcher = null;
+						if(name != null && !"".equals(name)) {
+							List<IMethodMatcher> ms = MatcherHelper.extractMethodMatchers(name);
+							if(ms != null && !ms.isEmpty()) {
+								methodMatcher = new MethodOrMatcher(ms.toArray(new IMethodMatcher[ms.size()]));
+							}
+						}
+						if(ann != null  && !"".equals(ann)) {
+							if(methodMatcher == null) {
+								methodMatcher = new MethodAnnotationMatcher(ann);
+							}else {
+								methodMatcher = new MethodAndMatcher(methodMatcher, new MethodAnnotationMatcher(ann));
+							}
+						}
+						methodMatchers.add(new MethodMatcherWithContext(methodMatcher, mm.getParameters()));
+					}
+					
 				}
 				
 				//传递groupId、message，用于写入嵌码类。

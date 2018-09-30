@@ -44,6 +44,7 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 	private final String CLASS_NAME;
 	private String name, descr;
 	private boolean trace;
+	private boolean rewrite_args;
 	private List<Object> matcherMessages;
 	
 	protected MethodAdvisorWriter(String className, MethodVisitor mv, int access, String name, String desc, MatcherContext context) {
@@ -60,6 +61,11 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
 		Boolean traceB = (Boolean)context.get(Constants.MATCHER_CONTEXT_TRACE);
 		if(Boolean.TRUE.equals(traceB)) {
 			this.trace = true;
+		}
+		
+		Boolean rewrite_argsB = (Boolean)context.get(Constants.MATCHER_CONTEXT_REWRITE_ARGS);
+		if(Boolean.TRUE.equals(rewrite_argsB)) {
+			this.rewrite_args = true;
 		}
 		
 		matcherMessages = (List<Object>)context.getList(Constants.MATCHER_CONTEXT_MATCHER_MESSAGES);
@@ -143,6 +149,9 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
     	}else if(clazz.equals(Byte.class) || clazz.equals(Byte.TYPE)) {
     		push((Byte)value);
     		return Type.BYTE_TYPE;
+    	}else if(clazz.equals(Boolean.class) || clazz.equals(Boolean.TYPE)) {
+    		push((Boolean)value);
+    		return Type.BOOLEAN_TYPE;
     	}else {
     		push(String.valueOf(value));
     		return TYPE_STRING;
@@ -308,15 +317,18 @@ public class MethodAdvisorWriter extends AdviceAdapter implements Opcodes {
         
         checkCast(Type.getType(Object[].class));
         
-//        //重新赋值
-        Type[] argTypes = Type.getArgumentTypes(methodDesc);
-        for (int i = 0; i < argTypes.length; i++) {
-        	dup();
-        	push(i);
-            arrayLoad(argTypes[i]);
-            unbox(argTypes[i]);
-            storeArg(i);
+        if(rewrite_args) {
+	        //重新赋值
+	        Type[] argTypes = Type.getArgumentTypes(methodDesc);
+	        for (int i = 0; i < argTypes.length; i++) {
+	        	dup();
+	        	push(i);
+	            arrayLoad(TYPE_OBJECT);
+	            unbox(argTypes[i]);
+	            storeArg(i);
+	        }
         }
+        
         pop();
         
         mark(beginLabel);

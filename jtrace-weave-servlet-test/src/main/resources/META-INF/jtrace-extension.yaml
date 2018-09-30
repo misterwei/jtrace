@@ -9,6 +9,8 @@ Weave-Listener:
     class: javax.servlet.http.HttpServlet
     method:
      - service
+    context:
+     rewriteArgs: true
   listener: com.github.wei.weave.servlet.HttpServletListener
  -
   matcher:
@@ -17,3 +19,10 @@ Weave-Listener:
     method:
      - getWriter
   listener: com.github.wei.weave.servlet.HttpServletResponseListener
+ -
+  matcher:
+    type: extract
+    class: javax.servlet.http.HttpServlet
+    method:
+     - maybeSetLastModified
+  listener: com.github.wei.weave.servlet.HttpServletListener2

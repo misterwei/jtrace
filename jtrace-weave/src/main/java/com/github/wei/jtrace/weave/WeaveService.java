@@ -42,21 +42,45 @@ public class WeaveService extends AbstractExtensionService {
 			List<?> result = (List<?>)weaveSignature;
 			for(Object match : result) {
 				Map<String,Object> map = (Map<String, Object>)match;
-				String className = (String)map.get("class");
-				Object method = map.get("method");
+				Object classObject = map.get("class");
+				if(classObject == null)
+					continue;
 				
-				AdviceMatcher.Builder builder = AdviceMatcher.newBuilder(className);
+				AdviceMatcher.Builder builder = null;
+				
+				if(classObject instanceof Map) {
+					Map<String,Object> classBean = (Map<String, Object>)classObject;
+					String className = (String)classBean.get("name");
+					String annotation = (String)classBean.get("annotation");
+					
+					builder = AdviceMatcher.newBuilder(className, annotation);
+				}else {
+					String className = (String)classObject;
+					builder = AdviceMatcher.newBuilderForClassName(className);
+				}
+				
 				builder.matchType(MatchType.EXTRACT);
 				builder.noWeave();
 				
+				
+				Object method = map.get("method");
 				if(method != null) {
 					if(method instanceof List) {
-						List<String> methods = (List<String>)method;
-						for(String m : methods) {
-							builder.addMethod(m).end();
+						List<Object> methods = (List<Object>)method;
+						for(Object m : methods) {
+							if(m instanceof Map) {
+								Map<String,Object> methodBean = (Map<String, Object>)m;
+								String name = (String)methodBean.get("name");
+								String annotation = (String)methodBean.get("annotation");
+								builder.addMethod().matchName(name).matchAnnotation(annotation).end();
+							}else {
+								String name = (String)m;
+								builder.addMethod().matchName(name).end();
+							}
+							
 						}
 					}else if(method instanceof String) {
-						builder.addMethod(String.valueOf(method)).end();
+						builder.addMethod().matchName((String)method).end();
 					}
 				}
 				signatures.add(builder);
@@ -70,9 +94,23 @@ public class WeaveService extends AbstractExtensionService {
 			for(Map<String, Object> listener : listeners) {
 				Map<String, Object> matcher = (Map<String, Object>)listener.get("matcher");
 				String type = (String)matcher.get("type");
-				String className = (String)matcher.get("class");
 				
-				AdviceMatcher.Builder builder = AdviceMatcher.newBuilder(className);
+				Object classObject = matcher.get("class");
+				if(classObject == null)
+					continue;
+				
+				AdviceMatcher.Builder builder = null;
+				if(classObject instanceof Map) {
+					Map<String,Object> classBean = (Map<String, Object>)classObject;
+					String className = (String)classBean.get("name");
+					String annotation = (String)classBean.get("annotation");
+					
+					builder = AdviceMatcher.newBuilder(className, annotation);
+				}else {
+					String className = (String)classObject;
+					builder = AdviceMatcher.newBuilderForClassName(className);
+				}
+				
 				if("base".equals(type)) {
 					builder.matchType(MatchType.BASE);
 				}else if("interface".equals(type)) {
@@ -81,13 +119,32 @@ public class WeaveService extends AbstractExtensionService {
 					builder.matchType(MatchType.EXTRACT);
 				}
 				
+				Map<String, Object> context = (Map<String, Object>)matcher.get("context");
+				if(context != null) {
+					Boolean rewriteArgs = (Boolean)context.get("rewriteArgs");
+					if(rewriteArgs != null && rewriteArgs.booleanValue()) {
+						builder.rewriteArgs();
+					}
+				}
+				
 				Object method = matcher.get("method");
-				if(method instanceof String) {
-					builder.addMethod(String.valueOf(method)).end();
-				}else if(method instanceof List) {
-					List<String> methods = (List<String>)method;
-					for(String m : methods) {
-						builder.addMethod(m).end();
+				if(method != null) {
+					if(method instanceof List) {
+						List<Object> methods = (List<Object>)method;
+						for(Object m : methods) {
+							if(m instanceof Map) {
+								Map<String,Object> methodBean = (Map<String, Object>)m;
+								String name = (String)methodBean.get("name");
+								String annotation = (String)methodBean.get("annotation");
+								builder.addMethod().matchName(name).matchAnnotation(annotation).end();
+							}else {
+								String name = (String)m;
+								builder.addMethod().matchName(name).end();
+							}
+							
+						}
+					}else if(method instanceof String) {
+						builder.addMethod().matchName((String)method).end();
 					}
 				}
 				

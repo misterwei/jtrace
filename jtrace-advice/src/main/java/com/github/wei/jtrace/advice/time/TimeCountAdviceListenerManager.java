@@ -57,7 +57,7 @@ public class TimeCountAdviceListenerManager implements IAdviceListenerManager{
 	
 	@Override
 	public void init(IAdviceController controller) {
-		controller.addMatcher(AdviceMatcher.newBuilder(className).addMethod(method).end().build());
+		controller.addMatcher(AdviceMatcher.newBuilderForClassName(className).addMethod().matchName(method).end().build());
 		controller.refresh();
 	}
 	

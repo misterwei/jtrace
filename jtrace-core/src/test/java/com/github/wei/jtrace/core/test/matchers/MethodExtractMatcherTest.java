@@ -18,7 +18,7 @@ public class MethodExtractMatcherTest  extends BaseTest{
 	public void testExtractMatcher() {
 		IMethodMatcher methodMatcher = new MethodExtractMatcher("test", "(Ljava.lang.String;Ljava.lang.Integer;)");
 		
-		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V");
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V", null);
 
 		assertTrue(methodMatcher.match(methodDescriber));
 	}
@@ -27,7 +27,7 @@ public class MethodExtractMatcherTest  extends BaseTest{
 	public void testRegex() {
 		IMethodMatcher methodMatcher = new MethodExtractMatcher("^test.*", "(Ljava.lang.String;Ljava.lang.Integer;)");
 		
-		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "testRegex", "(Ljava/lang/String;Ljava/lang/Integer;)V");
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "testRegex", "(Ljava/lang/String;Ljava/lang/Integer;)V", null);
 
 		assertTrue(methodMatcher.match(methodDescriber));
 	}
@@ -52,7 +52,7 @@ public class MethodExtractMatcherTest  extends BaseTest{
 	
 	@Test
 	public void testMethodDescriber() {
-		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V");
+		MethodDescriber methodDescriber = ClazzUtil.extractMethodDescriber(0x1, "test", "(Ljava/lang/String;Ljava/lang/Integer;)V", null);
 		assertEquals("method name not matched", "test", methodDescriber.getName());
 		assertEquals("method return type not matched", "void", methodDescriber.getReturnType());
 		assertArrayEquals("method arguments not matched", new String[] {"java/lang/String","java/lang/Integer"}, methodDescriber.getArgumentTypes());
