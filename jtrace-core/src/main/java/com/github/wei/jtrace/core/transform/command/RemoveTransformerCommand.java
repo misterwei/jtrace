@@ -27,7 +27,7 @@ public class RemoveTransformerCommand implements ICommand{
 	@Override
 	public Serializable execute(Object... args) throws Exception {
 		Integer id = (Integer)args[0];
-		transformerService.removeTransformerById(id);
+		transformerService.removeTransformerMatcherById(id);
 		
 		return "ok";
 	}

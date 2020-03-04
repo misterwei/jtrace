@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.github.wei.jtrace.core.test.config.ConfigTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 sec

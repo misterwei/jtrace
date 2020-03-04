@@ -23,7 +23,7 @@ public class ShowAllTransformerCommand implements ICommand{
 
 	@Override
 	public Serializable execute(Object... args) throws Exception {
-		List<Integer> ids = transformerService.getRegistedTransformerIds();
+		List<Integer> ids = transformerService.getRegisteredTransformerMatcherIds();
 		return new ArrayList<Integer>(ids);
 	}
 

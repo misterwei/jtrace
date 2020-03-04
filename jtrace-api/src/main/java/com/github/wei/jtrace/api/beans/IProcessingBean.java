@@ -1,5 +1,7 @@
 package com.github.wei.jtrace.api.beans;
 
+import com.github.wei.jtrace.api.exception.BeanProcessException;
+
 public interface IProcessingBean {
-	public void afterProcessComplete();
+	void afterProcessComplete() throws BeanProcessException;
 }

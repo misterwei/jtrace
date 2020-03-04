@@ -1,11 +1,7 @@
 package com.github.wei.jtrace.core.test;
 
-import org.junit.Before;
-import org.slf4j.Logger;
-
 import com.github.wei.jtrace.api.beans.IBeanFactory;
 import com.github.wei.jtrace.api.config.IConfigFactory;
-import com.github.wei.jtrace.core.advisor.AdviceManager;
 import com.github.wei.jtrace.core.beans.DefaultBeanFactory;
 import com.github.wei.jtrace.core.clazz.ClassDetailCommand;
 import com.github.wei.jtrace.core.clazz.ClassFinderManager;
@@ -25,6 +21,8 @@ import com.github.wei.jtrace.core.transform.command.MatchClassCommand;
 import com.github.wei.jtrace.core.transform.command.QueryMatchResultCommand;
 import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
 import com.github.wei.jtrace.core.util.AgentHelper;
+import org.junit.Before;
+import org.slf4j.Logger;
 
 public class BaseTest {
 	protected IBeanFactory beanFactory = new DefaultBeanFactory();
@@ -61,10 +59,7 @@ public class BaseTest {
 		beanFactory.registBean(MatchClassCommand.class);
 		beanFactory.registBean(RestoreClassCommand.class);
 		beanFactory.registBean(QueryMatchResultCommand.class);
-		
-		//advice
-		beanFactory.registBean(AdviceManager.class);
-		
+
 		//扩展服务
 		beanFactory.registBean(ExtensionService.class);
 		beanFactory.registBean(BeanClassLoaderService.class);

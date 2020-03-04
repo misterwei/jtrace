@@ -89,7 +89,7 @@ public class NettyRestServer implements IAsyncService{
             workerGroup.shutdownGracefully();
         }
 		
-        log.info("Stoped ");
+        log.info("Stopped ");
         
         running = false;
 	}

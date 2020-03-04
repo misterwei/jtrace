@@ -32,18 +32,6 @@ public class AgentLauncher {
             return jtraceClassLoader;
         }
         jtraceClassLoader = new AgentClassLoader(agentJar);
-        
-        // 获取各种Hook
-        final Class<?> advisorClass = jtraceClassLoader.loadClass("com.github.wei.jtrace.core.advisor.Advisor");
-
-        // 初始化AdvisorInvoker
-        AdvisorInvoker.init(
-        		advisorClass.getMethod("onMethodBegin",
-                        Class.class,
-                        Object.class,
-                        String.class,
-                        String.class,
-                        Object[].class));
 
         return jtraceClassLoader;
     }

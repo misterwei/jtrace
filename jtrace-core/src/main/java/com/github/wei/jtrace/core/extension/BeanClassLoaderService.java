@@ -29,7 +29,7 @@ public class BeanClassLoaderService implements IService, IAttributeHandler, IBea
 
 	@Override
 	public boolean start(IConfig config) {
-		extensionService.registAttributeHandler("Bean-Classes", this);
+		extensionService.registerAttributeHandler("Bean-Classes", this);
 		return true;
 	}
 
@@ -41,7 +41,7 @@ public class BeanClassLoaderService implements IService, IAttributeHandler, IBea
 				for(Object className : beans){
 					try{
 						Class<?> clazz = ctx.loadClass(String.valueOf(className));
-						log.info("RegistBean {}", className);
+						log.info("Register Bean {}", className);
 						
 						this.beanFactory.registBean(clazz);
 					}catch(Exception e){
@@ -51,7 +51,7 @@ public class BeanClassLoaderService implements IService, IAttributeHandler, IBea
 			}else if(value instanceof String){
 				try{
 					Class<?> clazz = ctx.loadClass(String.valueOf(value));
-					log.info("RegistBean {}", value);
+					log.info("Register Bean {}", value);
 					
 					this.beanFactory.registBean(clazz);
 				}catch(Exception e){

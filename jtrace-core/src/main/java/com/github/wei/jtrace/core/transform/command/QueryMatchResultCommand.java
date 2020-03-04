@@ -10,7 +10,7 @@ import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.command.Argument;
 import com.github.wei.jtrace.api.command.ICommand;
-import com.github.wei.jtrace.api.transform.ITransformer;
+import com.github.wei.jtrace.api.transform.ITransformerMatcher;
 import com.github.wei.jtrace.core.transform.TransformService;
 import com.github.wei.jtrace.core.transform.matchers.IQueryMatchResult;
 
@@ -28,7 +28,7 @@ public class QueryMatchResultCommand implements ICommand{
 	@Override
 	public Serializable execute(Object... args) throws Exception {
 		int id = Integer.parseInt(String.valueOf(args[0]));
-		ITransformer matcherAndTransformer = advisorWeaveService.getTransformer(id);
+		ITransformerMatcher matcherAndTransformer = advisorWeaveService.getTransformer(id);
 		if(matcherAndTransformer == null) {
 			throw new Exception("MatcherAndTransformer "+id+" not found");
 		}

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.github.wei.jtrace.server.test.GsonTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.311 sec

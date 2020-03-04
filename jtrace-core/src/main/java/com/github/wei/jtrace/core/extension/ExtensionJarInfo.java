@@ -18,8 +18,9 @@ public class ExtensionJarInfo {
 	private long lastModified;
 	private String name;
 	
-	
-	private ExtensionJarInfo(File file) throws IOException{
+	private int loadOrder;
+
+	private ExtensionJarInfo(File file) throws Exception{
 		this.file = file;
 		this.jarPath = file.getAbsolutePath();
 		this.lastModified = file.lastModified();
@@ -36,6 +37,11 @@ public class ExtensionJarInfo {
 					Yaml yaml = new Yaml();
 					Map<String, Object> config = yaml.load(in);
 					attributes = Collections.unmodifiableMap(config);
+					loadOrder = 0;
+					Object order = attributes.get("Load-Order");
+					if(order != null){
+						loadOrder = Integer.parseInt(String.valueOf(order));
+					}
 				}finally {
 					try {
 						in.close();
@@ -43,18 +49,17 @@ public class ExtensionJarInfo {
 				}
 			}else {
 				attributes = Collections.emptyMap();
+				loadOrder = 0;
 			}
-			
-			
+
 		}finally{
 			if(jarFile != null){
 				jarFile.close();
 			}
 		}
-		
 	}
 	
-	public static ExtensionJarInfo create(File file) throws IOException  {
+	public static ExtensionJarInfo create(File file) throws Exception  {
 		return new ExtensionJarInfo(file);
 	}
 	
@@ -73,7 +78,11 @@ public class ExtensionJarInfo {
 	public String getName() {
 		return name;
 	}
-	
+
+	public int getLoadOrder() {
+		return loadOrder;
+	}
+
 	@Override
 	public String toString() {
 		return "ExtensionJar ("+getJarPath()+") " + getAttributes();
@@ -106,5 +115,5 @@ public class ExtensionJarInfo {
 			return false;
 		return true;
 	}
-	
+
 }

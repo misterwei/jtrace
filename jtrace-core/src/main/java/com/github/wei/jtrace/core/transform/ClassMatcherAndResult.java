@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.github.wei.jtrace.api.transform.ITransformer;
 import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +19,13 @@ import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
 import com.github.wei.jtrace.api.clazz.MethodDescriber;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
-import com.github.wei.jtrace.api.transform.ITransformer;
+import com.github.wei.jtrace.api.transform.ITransformerMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IMethodMatcher;
 import com.github.wei.jtrace.core.transform.matchers.IQueryMatchResult;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 
-public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
+public class ClassMatcherAndResult implements ITransformerMatcher, IQueryMatchResult, ITransformer{
 	private static Logger log = LoggerFactory.getLogger("ClassMatcherAndResult");
 	
 	private ConcurrentHashMap<ClassLoader, List<ClassDescriber>> matchedClasses = new ConcurrentHashMap<ClassLoader, List<ClassDescriber>>();
@@ -54,15 +55,7 @@ public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
 	@Override
 	public byte[] transform(ClassLoader loader, IClassDescriberTree descrTree, Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-		try {
-			if(!classMatcher.matchClass(descrTree)) {
-				return null;
-			}
-		}catch(ClassMatchException e) {
-			log.error("Transform match class " + descrTree.getClassDescriber().getName() + " failed", e);
-			return null;
-		}
-		
+
 		ClassReader cr = new ClassReader(classfileBuffer);
 		ClassDescriber descr = descrTree.getClassDescriber();
 		
@@ -126,5 +119,12 @@ public class ClassMatcherAndResult implements ITransformer,IQueryMatchResult{
 			descrList.add(descr);
 		}
 	}
-	
+
+	@Override
+	public ITransformer matchedTransformer(IClassDescriberTree classTree) throws ClassMatchException {
+		if(!classMatcher.matchClass(classTree)) {
+			return null;
+		}
+		return this;
+	}
 }

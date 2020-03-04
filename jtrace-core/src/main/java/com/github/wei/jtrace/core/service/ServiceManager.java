@@ -1,10 +1,7 @@
 package com.github.wei.jtrace.core.service;
 
-import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.wei.jtrace.api.beans.Bean;
@@ -18,9 +15,10 @@ import com.github.wei.jtrace.api.beans.IProcessingBean;
 import com.github.wei.jtrace.api.config.IConfig;
 import com.github.wei.jtrace.api.config.IConfigFactory;
 import com.github.wei.jtrace.api.exception.BeanProcessException;
-import com.github.wei.jtrace.api.service.IAsyncService;
-import com.github.wei.jtrace.api.service.IService;
-import com.github.wei.jtrace.api.service.Stopable;
+import com.github.wei.jtrace.api.exception.ServiceStartException;
+import com.github.wei.jtrace.api.exception.ServiceStopException;
+import com.github.wei.jtrace.api.service.*;
+import com.github.wei.jtrace.core.exception.ServiceAlreadyExistsException;
 import com.github.wei.jtrace.core.util.Constants;
 
 @Bean
@@ -29,9 +27,9 @@ public class ServiceManager implements IServiceManager, IBeanFactoryAware, IProc
 	private static final String ASYNC_POOL_NAME_PREFIX = "AsyncExecutor-";
 	private static final int ASYNC_POOL_SIZE = 100;
 	
-	private ConcurrentHashMap<String, IService> services = new ConcurrentHashMap<String, IService>();	
-	private ConcurrentHashMap<String, IAsyncService> asyncServices = new ConcurrentHashMap<String, IAsyncService>();	
-	
+	private ConcurrentHashMap<String, IService> services = new ConcurrentHashMap<String, IService>();
+	private CopyOnWriteArrayList<IService> orderedServices = new CopyOnWriteArrayList<IService>();
+
 	private IBeanPostProcessor beanPostProcessor = new ServiceBeanPostProcessor();
 	private IBeanDestroyProcessor beanDestroyProcessor = new ServiceBeanDestroyProcessor();
 	private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -47,79 +45,63 @@ public class ServiceManager implements IServiceManager, IBeanFactoryAware, IProc
 	@BeanRef(name="configFactory")
 	private IConfigFactory configFactory;
 	
-	public void start(){
-		Collection<IAsyncService> asyncValues =  asyncServices.values();
-		for(IAsyncService service : asyncValues){
+	public void start() throws ServiceStartException {
+		List<IAsyncService> asyncServiceList = new ArrayList<IAsyncService>();
+		for(IService service : orderedServices){
 			IConfig config = configFactory.getConfig(CONFIG_PREFIX + service.getId());
-			if(config.getBoolean(Constants.ENABLED, true)){
-				if(!service.isRunning() && service.start(config)){
-					asyncExecutor.execute(service);
+			if(config.getBoolean(Constants.ENABLED, true)
+					&& service.start(config)){
+				if(service instanceof IAsyncService){
+					asyncServiceList.add((IAsyncService)service);
 				}
 			}
 		}
-		
-		Collection<IService> values =  services.values();
-		for(IService service : values){
-			IConfig config = configFactory.getConfig(CONFIG_PREFIX + service.getId());
-			if(config.getBoolean(Constants.ENABLED, true)){
-				service.start(config);
-			}
+
+		for(IAsyncService service : asyncServiceList){
+			asyncExecutor.execute(service);
 		}
 	}
 	
-	public boolean registAndStart(IService service){
+	public boolean addAndStart(IService service) throws ServiceAlreadyExistsException, ServiceStartException{
 		IConfig config = configFactory.getConfig(CONFIG_PREFIX + service.getId());
 		if(config != null && !config.getBoolean(Constants.ENABLED, true)){
 			return false;
 		}
-		
-		if(service instanceof IAsyncService){
-			asyncServices.putIfAbsent(service.getId(), (IAsyncService)service);
-			if(service.start(config)){
-				asyncExecutor.execute((IAsyncService)service);
-				services.putIfAbsent(service.getId(), service);
-				return true;
-			}
+
+		IService old = services.putIfAbsent(service.getId(), service);
+		if(old != null){
+			throw new ServiceAlreadyExistsException(old.getId());
+		}
+
+		orderedServices.add(service);
+
+		if(!service.start(config)){
 			return false;
 		}
-		
-		if(service.start(config)){
-			services.putIfAbsent(service.getId(), service);
-			return true;
+
+		if(service instanceof IAsyncService){
+			asyncExecutor.execute((IAsyncService)service);
 		}
-		return false;
+
+		return true;
 	}
 	
-	public void stop(){
-		Collection<IAsyncService> asyncValues =  asyncServices.values();
-		for(IAsyncService service : asyncValues){
-			if(service.isRunning()){
-				service.stop();
-			}
-		}
-		
-		Collection<IService> values =  services.values();
-		for(IService service : values){
-			if(service instanceof Stopable){
-				((Stopable)service).stop();
+	public void stop() throws ServiceStopException {
+
+		for(IService service : orderedServices){
+			if(service instanceof Stoppable){
+				((Stoppable)service).stop();
 			}
 		}
 	}
 	
-	public void removeAndStop(String id){
+	public void removeAndStop(String id) throws ServiceStopException{
 		if(services.containsKey(id)){
 			IService service = services.remove(id);
-			if(service instanceof Stopable){
-				((Stopable)service).stop();
+			if(service instanceof Stoppable){
+				((Stoppable)service).stop();
 			}
-			return;
-		}
-		
-		if(asyncServices.containsKey(id)) {
-			IAsyncService asyncService = asyncServices.remove(id);
-			if(asyncService.isRunning()) {
-				asyncService.stop();
-			}
+			orderedServices.remove(service);
 		}
 	}
 	
@@ -145,7 +127,13 @@ public class ServiceManager implements IServiceManager, IBeanFactoryAware, IProc
 		@Override
 		public <T> T process(T obj, IBeanProcessorChain chain) throws BeanProcessException {
 			if(obj instanceof IService){
-				registAndStart((IService)obj);
+				try {
+					addAndStart((IService)obj);
+				} catch (ServiceAlreadyExistsException e) {
+					throw new BeanProcessException(e);
+				} catch (ServiceStartException e) {
+					throw new BeanProcessException(e);
+				}
 			}
 			return chain.doProcess(obj);
 		}
@@ -162,7 +150,11 @@ public class ServiceManager implements IServiceManager, IBeanFactoryAware, IProc
 		@Override
 		public <T> T process(T obj, IBeanProcessorChain chain) throws BeanProcessException {
 			if(obj instanceof IService){
-				removeAndStop(((IService)obj).getId());
+				try {
+					removeAndStop(((IService)obj).getId());
+				} catch (ServiceStopException e) {
+					throw new BeanProcessException(e);
+				}
 			}
 			return chain.doProcess(obj);
 		}
@@ -170,8 +162,12 @@ public class ServiceManager implements IServiceManager, IBeanFactoryAware, IProc
 	}
 
 	@Override
-	public void afterProcessComplete() {
-		start();
+	public void afterProcessComplete() throws BeanProcessException {
+		try {
+			start();
+		} catch (ServiceStartException e) {
+			throw new BeanProcessException(e);
+		}
 	}
 	
 
