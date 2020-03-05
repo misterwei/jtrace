@@ -17,8 +17,6 @@ import com.github.wei.jtrace.core.resource.SearchResourceCommand;
 import com.github.wei.jtrace.core.service.ServiceManager;
 import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
 import com.github.wei.jtrace.core.transform.TransformService;
-import com.github.wei.jtrace.core.transform.command.MatchClassCommand;
-import com.github.wei.jtrace.core.transform.command.QueryMatchResultCommand;
 import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
 import com.github.wei.jtrace.core.util.AgentHelper;
 import org.junit.Before;
@@ -56,9 +54,7 @@ public class BaseTest {
 		beanFactory.registBean(ClassLoaderTreeCommand.class);
 		
 		//match and weave
-		beanFactory.registBean(MatchClassCommand.class);
 		beanFactory.registBean(RestoreClassCommand.class);
-		beanFactory.registBean(QueryMatchResultCommand.class);
 
 		//扩展服务
 		beanFactory.registBean(ExtensionService.class);

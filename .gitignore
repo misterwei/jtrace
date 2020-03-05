@@ -1,0 +1,10 @@
+
+*.iml
+target
+src/main/resources/**/*.jar
+.idea/
+classes
+.project
+.classpath
+.settings/*
+*.zip

@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.github.wei.jtrace.api.transform.ITransformService;
 import com.github.wei.jtrace.api.transform.ITransformer;
 import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
@@ -33,8 +34,8 @@ import com.github.wei.jtrace.core.util.AgentHelper;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 import com.github.wei.jtrace.core.util.IdGenerator;
 
-@Bean
-public class TransformService implements IAsyncService{
+@Bean(type=ITransformService.class)
+public class TransformService implements ITransformService, IAsyncService{
 
 	public static final int ID_MAX_VALUE = Integer.MAX_VALUE;
 
@@ -55,8 +56,7 @@ public class TransformService implements IAsyncService{
 	private boolean classout = false;
 	private volatile boolean running = false;
 
-	private long retransformThreadId = 0;
-	private IClassDescriberTree retransformClassDescriberTree;
+	private ThreadLocal<IClassDescriberTree> cachedClassDecriberTree = new ThreadLocal<IClassDescriberTree>();
 
 	@Override
 	public String getId() {
@@ -83,18 +83,37 @@ public class TransformService implements IAsyncService{
 
 	/**
 	 * 注册IMatcherAndTransformer
-	 * @param matcherAndResult
+	 * @param transformerMatcher
 	 * @param refresh
 	 * @return
 	 * @throws IllegalAccessException 
 	 */
-	public int registerTransformerMatcher(ITransformerMatcher matcherAndResult, boolean refresh) throws IllegalAccessException {
+	public int registerTransformerMatcher(ITransformerMatcher transformerMatcher, boolean refresh) throws IllegalAccessException {
 		int id = idGenerator.next();
 		
-		if(!registerTransformerMatcher(id, matcherAndResult, refresh)) {
+		if(!registerTransformerMatcher(id, transformerMatcher, refresh)) {
 			throw new IllegalAccessException("no ID sequence space");
 		}
 		
+		return id;
+	}
+
+	/**
+	 * 立即执行
+	 * @param transformerMatcher
+	 * @return
+	 * @throws IllegalAccessException
+	 */
+	@Override
+	public int registerTransformerMatcherImmediately(ITransformerMatcher transformerMatcher) throws IllegalAccessException {
+		int id = idGenerator.next();
+
+		if(!registerTransformerMatcher(id, transformerMatcher, false)) {
+			throw new IllegalAccessException("no ID sequence space");
+		}
+
+		matchAndRestransform(transformerMatcher);
+
 		return id;
 	}
 
@@ -115,7 +134,7 @@ public class TransformService implements IAsyncService{
 		return true;
 	}
 	
-	public synchronized void removeTransformerMatcherByMatched(IClassDescriberTree classTree) throws ClassMatchException {
+	public void removeTransformerMatcherByMatched(IClassDescriberTree classTree) throws ClassMatchException {
 		Set<Map.Entry<Integer, ITransformerMatcher>> entries = transformers.entrySet();
 		Iterator<Map.Entry<Integer, ITransformerMatcher>> it = entries.iterator();
 		while(it.hasNext()) {
@@ -166,7 +185,7 @@ public class TransformService implements IAsyncService{
 	}
 	
 	//获取适配的Class
-	public ITransformerMatcher getTransformer(int id){
+	public ITransformerMatcher getTransformerMatcherById(int id){
 		return transformers.get(id);
 	}
 	
@@ -188,52 +207,60 @@ public class TransformService implements IAsyncService{
 		}
 		return null;
 	}
-	
+
+	private void matchAndRestransform(IClassMatcher matcher){
+		Class<?>[] classes = inst.getAllLoadedClasses();
+		if(classes != null){
+			boolean found = false;
+			for(Class<?> clazz : classes){
+				if(clazz == null) {
+					continue;
+				}
+				if(ClazzUtil.isJtraceClass(clazz.getClassLoader(), clazz.getName())) {
+					continue;
+				}
+				boolean inner_found = false;
+				try {
+					IClassDescriberTree classTree = new ClassDescriberTreeFromClass(clazz);
+					if(matcher.matchClass(classTree)){
+						found = true;
+						inner_found = true;
+						cachedClassDecriberTree.set(classTree);
+						if(inst.isModifiableClass(clazz)) {
+							inst.retransformClasses(clazz);
+						}else {
+							log.warn("This class [{}] does not support rewriting", clazz);
+						}
+					}
+				}catch(UnmodifiableClassException ex){
+					log.error("Re transform class ["+clazz+"] failed", ex);
+				}catch(ClassMatchException e) {
+					log.error("Match class ["+clazz+"] failed", e);
+				}catch(Throwable e){
+					log.error("Re transform class ["+clazz+"] failed", e);
+				}finally {
+					if(inner_found) {
+						cachedClassDecriberTree.remove();
+					}
+				}
+			}
+
+			if(!found) {
+				log.warn("ClassMatcher {} not found matched classes", matcher);
+			}
+		}
+	}
+
 	@Override
 	public void run() {
-		this.retransformThreadId = Thread.currentThread().getId();
 		try {
 			while(running){
 				IClassMatcher matcher = matcherQueue.take();
 				if(matcher == null) {
 					continue;
 				}
-				
-				Class<?>[] classes = inst.getAllLoadedClasses();
-				if(classes != null){
-					boolean found = false;
-					for(Class<?> clazz : classes){
-						if(clazz == null) {
-							continue;
-						}
-						if(ClazzUtil.isJtraceClass(clazz.getClassLoader(), clazz.getName())) {
-							continue;
-						}
-						try {
-							this.retransformClassDescriberTree = new ClassDescriberTreeFromClass(clazz);
-							if(matcher.matchClass(retransformClassDescriberTree)){
-								found = true;
-								if(inst.isModifiableClass(clazz)) {
-									inst.retransformClasses(clazz);
-								}else {
-									log.warn("This class [{}] does not support rewriting", clazz);
-								}
-							}
-						}catch(UnmodifiableClassException ex){
-							log.error("Re transform class ["+clazz+"] failed", ex);
-						}catch(ClassMatchException e) {
-							log.error("Match class ["+clazz+"] failed", e);
-						}catch(Exception e){
-							log.error("Re transform class ["+clazz+"] failed", e);
-						}finally {
-							this.retransformClassDescriberTree = null;
-						}
-					}
-					
-					if(!found) {
-						log.warn("ClassMatcher {} not found matched classes", matcher);
-					}
-				}
+
+				matchAndRestransform(matcher);
 			}
 			log.info("Matcher task is stopped");
 		} catch (InterruptedException e) {
@@ -255,12 +282,9 @@ public class TransformService implements IAsyncService{
 			byte[] tempClassfileBuffer = classfileBuffer;
 			
 			try {
-				IClassDescriberTree classTree;
 				//如果从Retransform过来的则直接使用缓存的ClassDescriberTree
-				if(Thread.currentThread().getId() == TransformService.this.retransformThreadId &&
-						TransformService.this.retransformClassDescriberTree != null){
-					classTree = TransformService.this.retransformClassDescriberTree;
-				}else {
+				IClassDescriberTree classTree = TransformService.this.cachedClassDecriberTree.get();
+				if(classTree == null){
 					ClassReader cr = new ClassReader(classfileBuffer);
 					ClassDescriber describer = ClazzUtil.extractClassDescriber(cr);
 					IClassFinder classFinder = classFinderManager.getClassFinder(loader);

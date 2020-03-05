@@ -1,5 +1,0 @@
-com/github/wei/jtrace/agent/IAdvice.class
-com/github/wei/jtrace/agent/AdvisorInvoker.class
-com/github/wei/jtrace/agent/AgentLauncher.class
-com/github/wei/jtrace/agent/AgentClassLoader.class
-com/github/wei/jtrace/agent/AdvisorWeaved.class
