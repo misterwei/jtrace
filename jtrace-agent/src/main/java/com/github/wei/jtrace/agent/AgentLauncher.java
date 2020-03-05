@@ -1,8 +1,10 @@
 package com.github.wei.jtrace.agent;
 
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarFile;
 
 /**
@@ -32,18 +34,6 @@ public class AgentLauncher {
             return jtraceClassLoader;
         }
         jtraceClassLoader = new AgentClassLoader(agentJar);
-        
-        // 获取各种Hook
-        final Class<?> advisorClass = jtraceClassLoader.loadClass("com.github.wei.jtrace.core.advisor.Advisor");
-
-        // 初始化AdvisorInvoker
-        AdvisorInvoker.init(
-        		advisorClass.getMethod("onMethodBegin",
-                        Class.class,
-                        Object.class,
-                        String.class,
-                        String.class,
-                        Object[].class));
 
         return jtraceClassLoader;
     }
@@ -67,7 +57,12 @@ public class AgentLauncher {
             final ClassLoader agentLoader = loadOrDefineClassLoader(url);
             Class<?> starterClass = agentLoader.loadClass("com.github.wei.jtrace.core.JtraceLauncher");
             Method starterMethod = starterClass.getMethod("start", String[].class, Instrumentation.class);
-            
+            Field exportClassField = starterClass.getField("EXPORT_CLASS");
+
+            ConcurrentHashMap<String, ClassLoader> exportClassMap =
+                    (ConcurrentHashMap<String, ClassLoader>)exportClassField.get(null);
+            ClassLoaderInterceptor.init(exportClassMap);
+
             Object starter = starterClass.newInstance();
             starterMethod.invoke(starter, null, inst);
             

@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.wei</groupId>
   <artifactId>jtrace</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.9</version>
   <packaging>pom</packaging>
   
     <properties>
@@ -110,12 +110,7 @@
   	<module>jtrace-agent</module>
   	<module>jtrace-api</module>
     <module>jtrace-server</module>
-    <module>jtrace-advice</module>
-    <module>jtrace-weave-servlet-test</module>
-	<module>jtrace-weave-servlet-test2</module>
-	<module>jtrace-weave</module>
 	<module>jtrace-logger</module>
-	<module>jtrace-transform-test</module>
-	<module>jtrace-transform-test2</module>
+    <module>jtrace-asm</module>
   </modules>
 </project>

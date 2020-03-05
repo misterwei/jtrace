@@ -1,25 +1,17 @@
 package com.github.wei.jtrace.core;
 
-import java.io.File;
-import java.lang.instrument.Instrumentation;
-import java.net.URL;
-
-import org.slf4j.Logger;
-
 import com.github.wei.jtrace.api.beans.IBeanFactory;
 import com.github.wei.jtrace.api.config.IConfigFactory;
 import com.github.wei.jtrace.api.exception.BeanCheckException;
 import com.github.wei.jtrace.api.exception.BeanInstantiationException;
 import com.github.wei.jtrace.api.exception.BeanProcessException;
-import com.github.wei.jtrace.core.advisor.AdviceManager;
-import com.github.wei.jtrace.core.advisor.ListAdviceCommand;
-import com.github.wei.jtrace.core.advisor.RemoveAdviceCommand;
 import com.github.wei.jtrace.core.beans.DefaultBeanFactory;
 import com.github.wei.jtrace.core.clazz.ClassDetailCommand;
 import com.github.wei.jtrace.core.clazz.ClassFinderManager;
 import com.github.wei.jtrace.core.command.ClassLoaderTreeCommand;
 import com.github.wei.jtrace.core.command.CommandExecutorService;
 import com.github.wei.jtrace.core.config.DefaultConfigFactory;
+import com.github.wei.jtrace.core.export.ExportClassService;
 import com.github.wei.jtrace.core.extension.BeanClassLoaderService;
 import com.github.wei.jtrace.core.extension.ExtensionService;
 import com.github.wei.jtrace.core.logger.LoggerConfiger;
@@ -29,15 +21,20 @@ import com.github.wei.jtrace.core.resource.SearchResourceCommand;
 import com.github.wei.jtrace.core.service.ServiceManager;
 import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
 import com.github.wei.jtrace.core.transform.TransformService;
-import com.github.wei.jtrace.core.transform.command.MatchClassCommand;
-import com.github.wei.jtrace.core.transform.command.QueryMatchResultCommand;
 import com.github.wei.jtrace.core.transform.command.RemoveTransformerCommand;
 import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
 import com.github.wei.jtrace.core.transform.command.ShowAllTransformerCommand;
 import com.github.wei.jtrace.core.util.AgentHelper;
+import org.slf4j.Logger;
+
+import java.io.File;
+import java.lang.instrument.Instrumentation;
+import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JtraceLauncher {
-	
+	public static final ConcurrentHashMap<String, ClassLoader> EXPORT_CLASS = new ConcurrentHashMap<String, ClassLoader>();
+
 	public void start(final String[] args, final Instrumentation inst) throws Exception{
 		
 		URL properties = AgentHelper.getAgentPropertiesFile();
@@ -87,21 +84,16 @@ public class JtraceLauncher {
 		beanFactory.registBean(ClassLoaderTreeCommand.class);
 		
 		//match and weave
-		beanFactory.registBean(MatchClassCommand.class);
 		beanFactory.registBean(RestoreClassCommand.class);
-		beanFactory.registBean(QueryMatchResultCommand.class);
 		beanFactory.registBean(ShowAllTransformerCommand.class);
 		beanFactory.registBean(RemoveTransformerCommand.class);
-		
-		//advice
-		beanFactory.registBean(AdviceManager.class);
-		
+
+		beanFactory.registBean(ExportClassService.class);
+
 		//扩展服务
 		beanFactory.registBean(ExtensionService.class);
 		beanFactory.registBean(BeanClassLoaderService.class);
-		
-		beanFactory.registBean(ListAdviceCommand.class);
-		beanFactory.registBean(RemoveAdviceCommand.class);
+
 	}
 	
 }

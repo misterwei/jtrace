@@ -75,7 +75,7 @@ public class ResourceSearchService implements IAsyncService, IResourceSearcher {
 	public void stop() {
 		instrumentation.removeTransformer(classFileTransformer);
 		isRunning = false;
-		log.debug("stop ResourceSearchService");
+		log.debug("Stop check task");
 		
 		synchronized (stopLock) {
 			stopLock.notify();
@@ -171,11 +171,11 @@ public class ResourceSearchService implements IAsyncService, IResourceSearcher {
 
 	@Override
 	public void run() {
-		log.debug("running...");
+		log.debug("Running...");
 		try{
 			synchronized (stopLock) {
 				while(isRunning()){
-					log.debug("checking...");
+					log.debug("Checking...");
 					
 					Iterator<WeakReference<ClassLoader> > it = classLoaders.iterator();
 					while(it.hasNext()){
@@ -189,9 +189,9 @@ public class ResourceSearchService implements IAsyncService, IResourceSearcher {
 				}
 			}
 		}catch(Exception e){
-			log.warn("running exception", e);
+			log.warn("Running exception", e);
 		}
-		log.debug("stoped");
+		log.debug("Stopped");
 	}
 
 	@Override

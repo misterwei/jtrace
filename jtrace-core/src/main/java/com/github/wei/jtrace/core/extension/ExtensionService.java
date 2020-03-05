@@ -1,19 +1,14 @@
 package com.github.wei.jtrace.core.extension;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.github.wei.jtrace.api.beans.Bean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.wei.jtrace.api.beans.Bean;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Bean(type=IExtensionService.class)
-public class ExtensionService extends AbstractExtensionService implements IExtensionService{
+public class ExtensionService extends AbstractExtensionService implements IExtensionService {
 	
 	static Logger log = LoggerFactory.getLogger("ExtensionService");
 	
@@ -31,8 +26,8 @@ public class ExtensionService extends AbstractExtensionService implements IExten
 	}
 
 	@Override
-	protected void handle(Map<File, ExtensionJarInfo> jars) throws Exception{
-		for(final ExtensionJarInfo jarInfo : jars.values()){
+	protected void handle(List< ExtensionJarInfo> jars) throws Exception{
+		for(final ExtensionJarInfo jarInfo : jars){
 			extensionClassLoader.addURL(jarInfo.getFile().toURI().toURL());
 		}
 	}
@@ -62,11 +57,11 @@ public class ExtensionService extends AbstractExtensionService implements IExten
 	}
 
 	@Override
-	public void registAttributeHandler(String attributeName, IAttributeHandler handler) {
-		lock.writeLock().lock();
+	public void registerAttributeHandler(String attributeName, IAttributeHandler handler) {
+		lock.lock();
 		try {
 			//检查已有的Jar是否有适配的
-			Collection<ExtensionJarInfo> extJarInfos = jarInfos.values();
+			Collection<ExtensionJarInfo> extJarInfos = jarInfos;
 			if(extJarInfos != null) {
 				Iterator<ExtensionJarInfo> it = extJarInfos.iterator();
 				while(it.hasNext()) {
@@ -89,7 +84,7 @@ public class ExtensionService extends AbstractExtensionService implements IExten
 			
 			handlers.putIfAbsent(attributeName, handler);
 		}finally {
-			lock.writeLock().unlock();
+			lock.unlock();
 		}
 	}
 
@@ -98,9 +93,9 @@ public class ExtensionService extends AbstractExtensionService implements IExten
 	protected void handle(final ExtensionJarInfo jarInfo){
 		try {
 			Map<String, Object> attrs = jarInfo.getAttributes();
-			Set<String> keys = attrs.keySet();
-			for(String key : keys) {
-				IAttributeHandler handler = handlers.get(key);
+			Set<Map.Entry<String, Object>> entries = attrs.entrySet();
+			for(Map.Entry<String, Object> entry : entries) {
+				IAttributeHandler handler = handlers.get(entry.getKey());
 				if(handler != null) {
 					handler.handle(new IExtensionContext() {
 						@Override
@@ -117,14 +112,13 @@ public class ExtensionService extends AbstractExtensionService implements IExten
 						public ExtensionJarInfo getJarInfo() {
 							return jarInfo;
 						}
-					}, attrs.get(key));
+					}, entry.getValue());
 				}
 			}
 			
 		} catch (Exception e) {
-			log.warn("handle this extension jar failed", e);
+			log.warn("Handle this extension jar " + jarInfo + " failed", e);
 		}
 		
 	}
-	
 }

@@ -168,13 +168,7 @@ public class ClazzUtil {
 		
 		return methods;
 	}
-	
-	/**
-	 * 从ClassLoader中搜索Class字节流
-	 * @param loader
-	 * @param className
-	 * @return 如果没有找到类则返回NULL
-	 */
+
 	public static ClassDescriber extractClassDescriber(URL url) throws IOException{
 		if(url == null) {
 			return null;
@@ -245,8 +239,6 @@ public class ClazzUtil {
 	
 	/**
 	 * 获取签名
-	 * @param classDescr
-	 * @param methodDescr
 	 * @return
 	 */
 	public static String getSignature(String className, String method, String desc) {

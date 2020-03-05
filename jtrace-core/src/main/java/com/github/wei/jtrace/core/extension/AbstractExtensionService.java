@@ -3,11 +3,9 @@ package com.github.wei.jtrace.core.extension;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +21,12 @@ public abstract class AbstractExtensionService implements IAsyncService{
 	
 	private volatile boolean running = false;
 	
-	protected final ConcurrentHashMap<File, ExtensionJarInfo> jarInfos = new ConcurrentHashMap<File, ExtensionJarInfo>();
-	
+	protected final CopyOnWriteArrayList<ExtensionJarInfo> jarInfos = new CopyOnWriteArrayList<ExtensionJarInfo>();
+	protected final Set<File> jarFiles = new HashSet<File>();
+
 	private long scanInterval = 10000;
 	
-	protected ReadWriteLock lock = new ReentrantReadWriteLock();
+	protected ReentrantLock lock = new ReentrantLock();
 	
 	private final String defaultScanPath;
 	
@@ -49,7 +48,9 @@ public abstract class AbstractExtensionService implements IAsyncService{
 			File agentPath = AgentHelper.getAgentDirectory();
 			scanPath = new File(agentPath, defaultScanPath);
 		}
-		log.info("will scanning path: " + scanPath);
+		log.info("Sync extension path: " + scanPath);
+		scan();
+
 		running = true;
 		return true;
 	}
@@ -64,86 +65,115 @@ public abstract class AbstractExtensionService implements IAsyncService{
 		return running;
 	}
 
+	protected void scan(){
+		File[] files = scanPath.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				if(name.endsWith(".jar")){
+					return true;
+				}
+				return false;
+			}
+		});
+
+		if(files != null){
+			try {
+				lock.lock();
+
+				Set<File> tempFiles = new HashSet<File>();
+				List<ExtensionJarInfo> jars = new ArrayList<ExtensionJarInfo>();
+				for(File file: files){
+					tempFiles.add(file);
+					if(jarFiles.contains(file)){
+						continue;
+					}
+
+					File removedFlag = new File(file.getAbsolutePath()+".removed");
+					if(removedFlag.exists()) {
+						continue;
+					}
+
+					try {
+						ExtensionJarInfo jarInfo = ExtensionJarInfo.create(file);
+
+						jars.add(jarInfo);
+					} catch (Exception e) {
+						throw new Exception("Can't resolve this jar ["+file.getAbsolutePath()+"]", e);
+					}
+				}
+				//替换为最新的文件列表
+				jarFiles.clear();
+				jarFiles.addAll(tempFiles);
+
+				//根据加载顺序排序
+				sortByLoadOrder(jars);
+				handle(jars);
+
+				for(final ExtensionJarInfo jarInfo : jars){
+					Map<String, Object> attrs = jarInfo.getAttributes();
+					if(log.isDebugEnabled()) {
+						log.debug("Scanned extension {} attributes:{}", jarInfo.getName(), attrs);
+					}
+
+					handle(jarInfo);
+				}
+
+				jarInfos.addAll(jars);
+
+				//最终结果排序
+				sortByLoadOrder(jarInfos);
+			}catch(Exception e){
+				log.warn("Failed to handle jar info", e);
+			}finally {
+				lock.unlock();
+			}
+		}
+	}
+
 	@Override
 	public void run() {
 		while(running){
-			File[] files = scanPath.listFiles(new FilenameFilter() {
-				@Override
-				public boolean accept(File dir, String name) {
-					if(name.endsWith(".jar")){
-						return true;
-					}
-					return false;
-				}
-			});
-			
-			if(files != null){
-				try {
-					lock.readLock().lock();
-					
-					Map<File, ExtensionJarInfo> jars = new HashMap<File, ExtensionJarInfo>();
-					for(File file: files){
-						if(jarInfos.containsKey(file)){
-							continue;
-						}
-						
-						File removedFalg = new File(file.getAbsolutePath()+".removed");
-						if(removedFalg.exists()) {
-							continue;
-						}
-						
-						log.info("Scanned jar file: {}", file);
-						try {
-							ExtensionJarInfo jarInfo = ExtensionJarInfo.create(file);
-							
-							jars.put(file, jarInfo);
-						} catch (Exception e) {
-							throw new Exception("Can't resolve this jar ["+file.getAbsolutePath()+"]", e);
-						}
-					}
-					
-					handle(jars);
-					
-					for(final ExtensionJarInfo jarInfo : jars.values()){
-						Map<String, Object> attrs = jarInfo.getAttributes();
-						if(log.isDebugEnabled()) {
-							log.debug("ExtensionJar {} attributes:{}", jarInfo.getJarPath(), attrs);
-						}
-						
-						handle(jarInfo);
-					}
-					
-					jarInfos.putAll(jars);
-				}catch(Exception e){
-					log.warn("handle jar info failed", e);
-				}finally {
-					lock.readLock().unlock();
-				}
-			}
-			
 			try {
 				Thread.sleep(scanInterval);
 			} catch (InterruptedException e) {
-				log.error("sleep failed", e);
+				log.error("Sleep failed", e);
 				break;
 			}
+
+			log.debug("Will scanning path: {}", scanPath);
+			scan();
 		}
 		
 		running = false;
 	}
-	
-	protected void  handle(Map<File, ExtensionJarInfo> jars) throws Exception{}
+
+	private void sortByLoadOrder(List<ExtensionJarInfo> infos){
+		Collections.sort(infos, new Comparator<ExtensionJarInfo>() {
+			@Override
+			public int compare(ExtensionJarInfo t0, ExtensionJarInfo t1) {
+				return t0.getLoadOrder() - t1.getLoadOrder();
+			}
+		});
+	}
+
+	protected void  handle(List<ExtensionJarInfo> jars) throws Exception{}
 	
 	protected abstract void  handle(ExtensionJarInfo jarInfo);
 	
 	public void remove(ExtensionJarInfo jarInfo) {
 		File f = jarInfo.getFile();
 		File nf = new File(f.getAbsolutePath() + ".removed");
+
+		lock.lock();
 		try {
+
 			nf.createNewFile();
-			jarInfos.remove(f);
+			jarInfos.remove(jarInfo);
+			jarFiles.remove(f);
 		} catch (IOException e) {
 			log.error("Failed to create " + f.getName() +" removed-flag file", e);
+		}finally {
+			lock.unlock();
 		}
 	}
 }

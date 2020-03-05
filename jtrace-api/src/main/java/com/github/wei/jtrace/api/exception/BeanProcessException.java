@@ -5,16 +5,19 @@ public class BeanProcessException extends Exception {
 
 	/**
 	 * Create a new BeanInstantiationException.
-	 * @param beanClass the offending bean class
+	 * @param msg the offending bean class
 	 * @param msg the detail message
 	 */
 	public BeanProcessException(String msg) {
 		super(msg);
 	}
 
+	public BeanProcessException(Throwable t) {
+		super(t);
+	}
+
 	/**
 	 * Create a new BeanInstantiationException.
-	 * @param beanClass the offending bean class
 	 * @param msg the detail message
 	 * @param cause the root cause
 	 */

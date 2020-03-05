@@ -1,2 +1,3 @@
+Load-Order: 0
 Bean-Classes:
  - com.github.wei.jtrace.server.NettyRestServer

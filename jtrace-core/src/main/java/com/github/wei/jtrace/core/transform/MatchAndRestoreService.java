@@ -74,7 +74,7 @@ public class MatchAndRestoreService implements IAsyncService{
 								found = true;
 								
 								//必须先清除TransformService中的MatcherAndTransfomer
-								matchAndTransformService.removeTransformerByMatched(classTree);
+								matchAndTransformService.removeTransformerMatcherByMatched(classTree);
 								
 								try {
 									if(inst.isModifiableClass(clazz)) {
