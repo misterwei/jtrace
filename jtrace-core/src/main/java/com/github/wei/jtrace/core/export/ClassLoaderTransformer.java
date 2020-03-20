@@ -12,6 +12,7 @@ import java.security.ProtectionDomain;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 
 public class ClassLoaderTransformer implements ITransformer {
+    private final String JAVA_OBJECT_TYPE = "java/lang/Object";
     @Override
     public byte[] transform(final ClassLoader loader, IClassDescriberTree descr, Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain, byte[] classfileBuffer)
@@ -33,8 +34,13 @@ public class ClassLoaderTransformer implements ITransformer {
              */
             @Override
             protected String getCommonSuperClass(String type1, String type2) {
+                if(JAVA_OBJECT_TYPE.equals(type1) || JAVA_OBJECT_TYPE.equals(type2)){
+                    return JAVA_OBJECT_TYPE;
+                }
+
                 Class<?> c, d;
                 try {
+
                     c = Class.forName(type1.replace('/', '.'), false, loader);
                     d = Class.forName(type2.replace('/', '.'), false, loader);
                 } catch (Exception e) {

@@ -140,7 +140,7 @@ public abstract class AbstractExtensionService implements IAsyncService{
 				break;
 			}
 
-			log.debug("Will scanning path: {}", scanPath);
+//			log.debug("Will scanning path: {}", scanPath);
 			scan();
 		}
 		
