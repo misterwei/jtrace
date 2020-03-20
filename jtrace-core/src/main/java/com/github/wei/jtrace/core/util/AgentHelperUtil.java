@@ -7,10 +7,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 
-public class AgentHelper {
+public class AgentHelperUtil {
 	public static final Boolean SYSTEM_OUT = false;
 	public static final String AGENT_JAR_NAME = "jtrace-core.jar";
-	public static final ClassLoader AGENT_CLASSLOADER = AgentHelper.class.getClassLoader();
+	public static final ClassLoader AGENT_CLASSLOADER = AgentHelperUtil.class.getClassLoader();
 	
 	private static File agentDir = null;
 	

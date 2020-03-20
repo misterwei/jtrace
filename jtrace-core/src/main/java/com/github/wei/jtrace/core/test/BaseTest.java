@@ -18,7 +18,7 @@ import com.github.wei.jtrace.core.service.ServiceManager;
 import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
 import com.github.wei.jtrace.core.transform.TransformService;
 import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
-import com.github.wei.jtrace.core.util.AgentHelper;
+import com.github.wei.jtrace.core.util.AgentHelperUtil;
 import org.junit.Before;
 import org.slf4j.Logger;
 
@@ -32,7 +32,7 @@ public class BaseTest {
 		
 		Logger logger = RootLogger.get();
 		
-		logger.info("jtrace agent path: {}", AgentHelper.getAgentDirectory());
+		logger.info("jtrace agent path: {}", AgentHelperUtil.getAgentDirectory());
 		
 		beanFactory.registObject("instrumentation", new TestInstrumentation());
 		beanFactory.registObject("configFactory", configFactory);

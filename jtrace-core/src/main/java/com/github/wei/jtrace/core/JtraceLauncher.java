@@ -24,7 +24,7 @@ import com.github.wei.jtrace.core.transform.TransformService;
 import com.github.wei.jtrace.core.transform.command.RemoveTransformerCommand;
 import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
 import com.github.wei.jtrace.core.transform.command.ShowAllTransformerCommand;
-import com.github.wei.jtrace.core.util.AgentHelper;
+import com.github.wei.jtrace.core.util.AgentHelperUtil;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -37,7 +37,7 @@ public class JtraceLauncher {
 
 	public void start(final String[] args, final Instrumentation inst) throws Exception{
 		
-		URL properties = AgentHelper.getAgentPropertiesFile();
+		URL properties = AgentHelperUtil.getAgentPropertiesFile();
 		System.out.println("jtrace properties file " + properties);
 		
 		IConfigFactory configFactory = new DefaultConfigFactory(properties);
@@ -46,7 +46,7 @@ public class JtraceLauncher {
 		
 		final Logger logger = RootLogger.get();
 		
-		File agentDir = AgentHelper.getAgentDirectory();
+		File agentDir = AgentHelperUtil.getAgentDirectory();
 		logger.info("jtrace agent path: {}", agentDir);
 		
 		
@@ -72,6 +72,7 @@ public class JtraceLauncher {
 	}
 	
 	private void initBeanFactory(IBeanFactory beanFactory) throws BeanInstantiationException, BeanProcessException, BeanCheckException{
+		beanFactory.registBean(AgentHelperImpl.class);
 		beanFactory.registBean(CommandExecutorService.class);
 		beanFactory.registBean(ResourceSearchService.class);
 		beanFactory.registBean(ClassFinderManager.class);

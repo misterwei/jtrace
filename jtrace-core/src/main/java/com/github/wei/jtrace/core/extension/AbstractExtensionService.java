@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.wei.jtrace.api.config.IConfig;
 import com.github.wei.jtrace.api.service.IAsyncService;
-import com.github.wei.jtrace.core.util.AgentHelper;
+import com.github.wei.jtrace.core.util.AgentHelperUtil;
 
 public abstract class AbstractExtensionService implements IAsyncService{
 	Logger log = LoggerFactory.getLogger("AbstractExtensionService");
@@ -45,7 +45,7 @@ public abstract class AbstractExtensionService implements IAsyncService{
 				return false;
 			}
 		}else{
-			File agentPath = AgentHelper.getAgentDirectory();
+			File agentPath = AgentHelperUtil.getAgentDirectory();
 			scanPath = new File(agentPath, defaultScanPath);
 		}
 		log.info("Sync extension path: " + scanPath);

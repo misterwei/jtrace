@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import com.github.wei.jtrace.api.config.IConfigFactory;
 import com.github.wei.jtrace.core.config.DefaultConfigFactory;
-import com.github.wei.jtrace.core.util.AgentHelper;
+import com.github.wei.jtrace.core.util.AgentHelperUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
@@ -19,7 +19,7 @@ public class ConfigTest {
 
 	@Test
 	public void allConfig() throws Exception{
-		URL url = AgentHelper.getAgentPropertiesFile();
+		URL url = AgentHelperUtil.getAgentPropertiesFile();
 		IConfigFactory configFactory = new DefaultConfigFactory(url);
 		DefaultConfig config = configFactory.getConfig(DefaultConfig.class);
 		

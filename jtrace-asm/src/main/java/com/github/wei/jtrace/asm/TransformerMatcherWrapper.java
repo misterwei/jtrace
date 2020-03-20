@@ -51,7 +51,7 @@ public class TransformerMatcherWrapper implements ITransformerMatcher, ITransfor
             IMethodTransformer imt = methodTransformerMatcher.matchedTransformer(mn);
             if(imt != null){
                 modified = true;
-                mn = imt.transform(mn);
+                mn = imt.transform(loader, descr.getClassDescriber(), mn);
                 if(mn != null) {
                     methodNodes.set(i, mn);
                 }

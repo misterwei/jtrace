@@ -30,7 +30,7 @@ import com.github.wei.jtrace.api.exception.ClassMatchException;
 import com.github.wei.jtrace.api.service.IAsyncService;
 import com.github.wei.jtrace.api.transform.ITransformerMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
-import com.github.wei.jtrace.core.util.AgentHelper;
+import com.github.wei.jtrace.core.util.AgentHelperUtil;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 import com.github.wei.jtrace.core.util.IdGenerator;
 
@@ -315,7 +315,7 @@ public class TransformService implements ITransformService, IAsyncService{
 			if(tempClassfileBuffer != classfileBuffer) {
 				if(classout) {
 					try {
-						File file = AgentHelper.getAgentDirectory();
+						File file = AgentHelperUtil.getAgentDirectory();
 						File classoutPath = new File(file, "classout");
 						String[] classPathAndFile = ClazzUtil.splitClassPathAndFile(className);
 						String classFileName = null;

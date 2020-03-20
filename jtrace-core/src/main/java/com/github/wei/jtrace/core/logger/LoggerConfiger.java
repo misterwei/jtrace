@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.wei.jtrace.api.config.IConfig;
 import com.github.wei.jtrace.api.config.IConfigFactory;
-import com.github.wei.jtrace.core.util.AgentHelper;
+import com.github.wei.jtrace.core.util.AgentHelperUtil;
 import com.google.common.base.Splitter;
 
 public class LoggerConfiger {
@@ -24,7 +24,7 @@ public class LoggerConfiger {
 	private static File logDir = null;
 	
 	static{
-		File agentDir = AgentHelper.getAgentDirectory();
+		File agentDir = AgentHelperUtil.getAgentDirectory();
 		if(agentDir == null){
 			logDir = new File("logs");
 		}else{

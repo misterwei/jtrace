@@ -1,6 +1,10 @@
 package com.github.wei.jtrace.core.test;
 
 import java.io.File;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.io.Files;
 
@@ -28,17 +32,48 @@ public class TestRun {
 	}
 
 	private static int testIf(){
-		Integer i = test(123);
-		if(i == null){
-			System.out.println(i);
-			return 1;
+		int i=0;
+		try {
+			if(i == 1){
+				System.out.println("no1");
+				return 1;
+			}
+			System.out.println("no");
+			return 2;
+		}finally {
+			System.out.println("yes");
 		}
-		System.out.println("no");
-		return 2;
 	}
 
-	private static Integer test(int i){
-		return 1;
+
+	public void testFor() {
+		PrintStream ps = System.out;
+
+		try {
+			System.out.println(0);
+		} finally {
+			;
+		}
+
+		ps.println(1);
+	}
+
+	public void testFor2() {
+		PrintStream ps = System.out;
+
+		try {
+			System.out.println(0);
+		} finally {
+			ps.println(1);
+		}
+	}
+
+	private static void test(){
+		try {
+			return;
+		}finally {
+			System.out.println("aaa");
+		}
 	}
 	
 	private static void testArgs(String msg, Object...objects){
