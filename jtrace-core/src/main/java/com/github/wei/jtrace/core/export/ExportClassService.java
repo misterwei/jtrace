@@ -18,7 +18,7 @@ import com.github.wei.jtrace.core.JtraceLauncher;
 public class ExportClassService implements IExportClassService, IProcessingBean, ITransformerMatcher {
 
     private IClassMatcher classMatcher =
-            new BaseClassMatcher("java/lang/ClassLoader", "java/net/URLClassLoader");
+            new BaseClassMatcher("java/net/URLClassLoader", "java/lang/ClassLoader");
 
     private ClassLoaderTransformer transformer = new ClassLoaderTransformer();
 

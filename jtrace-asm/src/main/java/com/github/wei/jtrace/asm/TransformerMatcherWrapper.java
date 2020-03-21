@@ -50,10 +50,10 @@ public class TransformerMatcherWrapper implements ITransformerMatcher, ITransfor
         List<MethodNode> methodNodes =  classNode.methods;
         for(int i=0;i<methodNodes.size();i++){
             MethodNode mn = methodNodes.get(i);
-            IMethodTransformer imt = methodTransformerMatcher.matchedTransformer(mn);
+            IMethodTransformer imt = methodTransformerMatcher.matchedTransformer(loader, descr.getClassDescriber(), mn);
             if(imt != null){
                 modified = true;
-                mn = imt.transform(loader, descr.getClassDescriber(), mn);
+                mn = imt.transform(mn);
                 if(mn != null) {
                     methodNodes.set(i, mn);
                 }

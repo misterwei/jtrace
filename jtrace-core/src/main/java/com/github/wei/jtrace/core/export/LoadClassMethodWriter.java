@@ -14,8 +14,9 @@ public class LoadClassMethodWriter extends AdviceAdapter implements Opcodes {
 
     private final Type TYPE_INTERCEPTOR = Type.getType("Lcom/github/wei/jtrace/agent/ClassLoaderInterceptor;");
 
+    private final Type TYPE_CLASSLOADER_CLASS = Type.getType(ClassLoader.class);
     private final Type TYPE_CLASS = Type.getType(Class.class);
-    private final Method METHOD_LOAD_CLASS = Method.getMethod("Class loadClass(String)");
+    private final Method METHOD_LOAD_CLASS = Method.getMethod("Class loadClass(java.lang.ClassLoader, String)");
     private final Label LABEL_IF_TRUE = new Label();
 
 
@@ -44,6 +45,8 @@ public class LoadClassMethodWriter extends AdviceAdapter implements Opcodes {
 
     @Override
     protected void onMethodEnter() {
+        loadThis();
+        checkCast(TYPE_CLASSLOADER_CLASS);
         loadArg(0);
         invokerInterceptorLoadClass();
 

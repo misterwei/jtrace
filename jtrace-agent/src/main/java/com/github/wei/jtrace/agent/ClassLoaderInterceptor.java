@@ -22,9 +22,9 @@ public class ClassLoaderInterceptor {
         CLASS_LOADERS = null;
     }
 
-    public static Class<?> loadClass(String className){
+    public static Class<?> loadClass(ClassLoader classLoader, String className){
         ClassLoader loader = CLASS_LOADERS.get(className);
-        if(loader == null){
+        if(loader == null || loader == classLoader){
             return null;
         }
         try {
