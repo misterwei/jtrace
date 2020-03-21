@@ -3,6 +3,7 @@ package com.github.wei.jtrace.asm.command;
 import com.github.wei.jtrace.api.clazz.ClassDescriber;
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
+import com.github.wei.jtrace.api.exception.TransformException;
 import com.github.wei.jtrace.api.transform.ITransformer;
 import com.github.wei.jtrace.api.transform.ITransformerMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
@@ -81,7 +82,7 @@ public class ClassMatcherAndResult implements ITransformerMatcher, ITransformer,
 	@Override
 	public byte[] transform(ClassLoader loader, IClassDescriberTree descr,
 							Class<?> classBeingRedefined, ProtectionDomain protectionDomain,
-							byte[] classfileBuffer) throws IllegalClassFormatException {
+							byte[] classfileBuffer) throws TransformException {
 		ClassReader cr = new ClassReader(classfileBuffer);
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, ClassReader.EXPAND_FRAMES);

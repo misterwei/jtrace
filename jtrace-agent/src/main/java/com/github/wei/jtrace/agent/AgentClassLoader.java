@@ -8,7 +8,7 @@ public class AgentClassLoader extends URLClassLoader {
 
 
     public AgentClassLoader(URL agentJarUrl) throws MalformedURLException {
-        super(new URL[]{agentJarUrl});
+        super(new URL[]{agentJarUrl}, null);
     }
 
     @Override

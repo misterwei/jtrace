@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.github.wei.jtrace.api.exception.TransformException;
 import com.github.wei.jtrace.api.transform.ITransformService;
 import com.github.wei.jtrace.api.transform.ITransformer;
 import org.objectweb.asm.ClassReader;
@@ -304,12 +305,14 @@ public class TransformService implements ITransformService, IAsyncService{
 						tempClassfileBuffer = bytes;
 					}
 				}
+			}catch (TransformException e){
+				log.warn("Failed to transform class " + className, e);
 			}catch (ClassMatchException e){
 				log.warn("Failed to get matched transformer for " + className, e);
 			}catch(ClassFinderException e) {
 				log.warn("Failed to get class finder for " + className, e);
-			}catch(Exception e) {
-				log.error("Failed to transform class " + className, e);
+			}catch(Throwable e) {
+				log.error("Failed to match or transform class " + className, e);
 			}
 			
 			if(tempClassfileBuffer != classfileBuffer) {

@@ -1,6 +1,7 @@
 package com.github.wei.jtrace.api.transform;
 
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
+import com.github.wei.jtrace.api.exception.TransformException;
 
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
@@ -13,5 +14,5 @@ public interface ITransformer {
                 Class<?>            classBeingRedefined,
                 ProtectionDomain protectionDomain,
                 byte[]              classfileBuffer)
-            throws IllegalClassFormatException;
+            throws TransformException;
 }

@@ -1,6 +1,7 @@
 package com.github.wei.jtrace.core.export;
 
 import com.github.wei.jtrace.api.clazz.IClassDescriberTree;
+import com.github.wei.jtrace.api.exception.TransformException;
 import com.github.wei.jtrace.api.transform.ITransformer;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -16,7 +17,7 @@ public class ClassLoaderTransformer implements ITransformer {
     @Override
     public byte[] transform(final ClassLoader loader, IClassDescriberTree descr, Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain, byte[] classfileBuffer)
-            throws IllegalClassFormatException {
+            throws TransformException {
 
         ClassReader cr = new ClassReader(classfileBuffer);
 
@@ -70,6 +71,7 @@ public class ClassLoaderTransformer implements ITransformer {
     private class ClassLoaderInterceptorWriter extends ClassVisitor implements Opcodes {
         final Logger logger = LoggerFactory.getLogger("ClassLoaderInterceptorWriter");
         private final String METHOD_NAME = "loadClass";
+        private final String METHOD_DESC = "(Ljava/lang/String;)Ljava/lang/Class;";
         private final String CLASS_NAME;
         public ClassLoaderInterceptorWriter(String className, ClassVisitor cv) {
             super(ASM5, cv);
@@ -80,13 +82,13 @@ public class ClassLoaderTransformer implements ITransformer {
         public MethodVisitor visitMethod(int access, final String name, final String desc, String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
 
-            if(!METHOD_NAME.equals(name)){
-                return mv;
+            if(METHOD_NAME.equals(name) && METHOD_DESC.equals(desc)){
+                logger.info("Transforming method {}.{}{} ", CLASS_NAME, name, desc);
+
+                return new LoadClassMethodWriter(CLASS_NAME, mv, access, name, desc);
             }
 
-            logger.info("Transforming method {}.{}{} ", CLASS_NAME, name, desc);
-
-            return new LoadClassMethodWriter(CLASS_NAME, mv, access, name, desc);
+            return mv;
         }
     }
 
