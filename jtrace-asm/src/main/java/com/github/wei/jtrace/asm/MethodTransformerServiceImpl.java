@@ -32,6 +32,14 @@ public class MethodTransformerServiceImpl implements IMethodTransformerService {
     }
 
     @Override
+    public void refreshMethodTransformerMatcher(IMethodTransformerMatcher transformer) {
+        Integer id = map.remove(transformer);
+        if(id != null){
+            transformService.refreshTransformerById(id);
+        }
+    }
+
+    @Override
     public void removeMethodTransformerMatcher(IMethodTransformerMatcher transformer) {
         Integer id = map.remove(transformer);
         if(id != null){
