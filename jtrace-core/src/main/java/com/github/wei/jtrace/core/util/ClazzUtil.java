@@ -223,7 +223,15 @@ public class ClazzUtil {
 	public static boolean classNameEquals(String name1, String name2) {
 		return name1 != null ? classNameToPath(name1).equals(classNameToPath(name2)) : name2 == null;
 	}
-	
+
+	public static boolean isExcludes(ClassLoader loader, String className){
+		className = classNameToPath(className);
+		if(className.startsWith("com/sun") || className.startsWith("$")){
+			return true;
+		}
+		return isJtraceClass(loader, className);
+	}
+
 	public static boolean isJtraceClass(ClassLoader loader, String className) {
 		if(loader != null && loader.getClass().getName().equals(Constants.AGENTCLASSLOADER_CLASSNAME)){
 			return true;

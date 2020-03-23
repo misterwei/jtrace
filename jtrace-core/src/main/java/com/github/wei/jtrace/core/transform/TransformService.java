@@ -1,23 +1,5 @@
 package com.github.wei.jtrace.core.transform;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
-import java.lang.instrument.Instrumentation;
-import java.lang.instrument.UnmodifiableClassException;
-import java.security.ProtectionDomain;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import com.github.wei.jtrace.api.exception.TransformException;
-import com.github.wei.jtrace.api.transform.ITransformService;
-import com.github.wei.jtrace.api.transform.ITransformer;
-import org.objectweb.asm.ClassReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.wei.jtrace.api.beans.AutoRef;
 import com.github.wei.jtrace.api.beans.Bean;
 import com.github.wei.jtrace.api.beans.BeanRef;
@@ -28,12 +10,28 @@ import com.github.wei.jtrace.api.clazz.IClassFinderManager;
 import com.github.wei.jtrace.api.config.IConfig;
 import com.github.wei.jtrace.api.exception.ClassFinderException;
 import com.github.wei.jtrace.api.exception.ClassMatchException;
+import com.github.wei.jtrace.api.exception.TransformException;
 import com.github.wei.jtrace.api.service.IAsyncService;
+import com.github.wei.jtrace.api.transform.ITransformService;
+import com.github.wei.jtrace.api.transform.ITransformer;
 import com.github.wei.jtrace.api.transform.ITransformerMatcher;
 import com.github.wei.jtrace.api.transform.matcher.IClassMatcher;
 import com.github.wei.jtrace.core.util.AgentHelperUtil;
 import com.github.wei.jtrace.core.util.ClazzUtil;
 import com.github.wei.jtrace.core.util.IdGenerator;
+import org.objectweb.asm.ClassReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
+import java.lang.instrument.Instrumentation;
+import java.security.ProtectionDomain;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Bean(type=ITransformService.class)
 public class TransformService implements ITransformService, IAsyncService{
@@ -54,6 +52,7 @@ public class TransformService implements ITransformService, IAsyncService{
 
 	private ConcurrentHashMap<Integer, ITransformerMatcher> transformers = new ConcurrentHashMap<Integer, ITransformerMatcher>();
 
+	private long retransformInterval = 5000; //毫秒
 	private boolean classout = false;
 	private volatile boolean running = false;
 
@@ -68,8 +67,8 @@ public class TransformService implements ITransformService, IAsyncService{
 	public boolean start(IConfig config) {
 		inst.addTransformer(weaveTransformer, true);
 		classout = config.getBoolean("classout", false);
+		retransformInterval = config.getLong("retransformInterval", 5000);
 		return running = true;
-		
 	}
 
 	@Override
@@ -113,7 +112,7 @@ public class TransformService implements ITransformService, IAsyncService{
 			throw new IllegalAccessException("no ID sequence space");
 		}
 
-		matchAndRestransform(transformerMatcher);
+		matchAndRetransform(Collections.<IClassMatcher>singletonList(transformerMatcher));
 
 		return id;
 	}
@@ -209,59 +208,86 @@ public class TransformService implements ITransformService, IAsyncService{
 		return null;
 	}
 
-	private void matchAndRestransform(IClassMatcher matcher){
+	private void matchAndRetransform(List<IClassMatcher> matchers){
 		Class<?>[] classes = inst.getAllLoadedClasses();
-		if(classes != null){
-			boolean found = false;
-			for(Class<?> clazz : classes){
-				if(clazz == null) {
-					continue;
-				}
-				if(ClazzUtil.isJtraceClass(clazz.getClassLoader(), clazz.getName())) {
-					continue;
-				}
-				boolean inner_found = false;
+		if(classes == null){
+			return;
+		}
+
+		long startTime = System.currentTimeMillis();
+		Map<IClassMatcher, Integer> counter = new HashMap<IClassMatcher, Integer>();
+		for(Class<?> clazz : classes){
+			if(clazz == null) {
+				continue;
+			}
+			if(ClazzUtil.isExcludes(clazz.getClassLoader(), clazz.getName())) {
+				continue;
+			}
+
+			if(!inst.isModifiableClass(clazz)){
+				log.debug("This class [{}] does not support rewriting", clazz);
+				continue;
+			}
+
+			IClassDescriberTree classTree;
+			try {
+				classTree = new ClassDescriberTreeFromClass(clazz);
+			}catch(Throwable e){
+				log.error("Failed to create class describer tree from class " + clazz, e);
+				continue;
+			}
+
+			boolean inner_found = false;
+			for (IClassMatcher matcher : matchers) {
 				try {
-					IClassDescriberTree classTree = new ClassDescriberTreeFromClass(clazz);
-					if(matcher.matchClass(classTree)){
-						found = true;
-						inner_found = true;
-						cachedClassDecriberTree.set(classTree);
-						if(inst.isModifiableClass(clazz)) {
-							inst.retransformClasses(clazz);
-						}else {
-							log.warn("This class [{}] does not support rewriting", clazz);
+					if (matcher.matchClass(classTree)) {
+						Integer count = counter.get(matcher);
+						if(count == null){
+							counter.put(matcher, 1);
+						}else{
+							counter.put(matcher, count + 1);
 						}
+						inner_found = true;
 					}
-				}catch(UnmodifiableClassException ex){
-					log.error("Re transform class ["+clazz+"] failed", ex);
-				}catch(ClassMatchException e) {
-					log.error("Match class ["+clazz+"] failed", e);
-				}catch(Throwable e){
-					log.error("Re transform class ["+clazz+"] failed", e);
-				}finally {
-					if(inner_found) {
-						cachedClassDecriberTree.remove();
-					}
+				} catch (Throwable e) {
+					log.error("Failed to match class [" + clazz + "], matcher: " + matcher, e);
 				}
 			}
 
-			if(!found) {
-				log.warn("ClassMatcher {} not found matched classes", matcher);
+			if(inner_found){
+				log.info("About to retransform class {}", clazz);
+				cachedClassDecriberTree.set(classTree);
+				try{
+					inst.retransformClasses(clazz);
+				}catch (Throwable e){
+					log.error("Failed to retransform class " + clazz, e);
+				}finally {
+					cachedClassDecriberTree.remove();
+				}
 			}
 		}
+
+		for(IClassMatcher matcher : matchers){
+			Integer count = counter.get(matcher);
+			log.info("ClassMatcher {} matched class count: {}", matcher, count);
+		}
+
+		log.info("Time of this retransform matcher {} is {}", matchers, System.currentTimeMillis() - startTime);
 	}
 
 	@Override
 	public void run() {
 		try {
-			while(running){
-				IClassMatcher matcher = matcherQueue.take();
-				if(matcher == null) {
+			while(running && !Thread.currentThread().isInterrupted()){
+				List<IClassMatcher> matchers = new ArrayList<IClassMatcher>();
+				matcherQueue.drainTo(matchers);
+
+				if(matchers.isEmpty()) {
+					Thread.sleep(retransformInterval);
 					continue;
 				}
 
-				matchAndRestransform(matcher);
+				matchAndRetransform(matchers);
 			}
 			log.info("Matcher task is stopped");
 		} catch (InterruptedException e) {
@@ -276,10 +302,10 @@ public class TransformService implements ITransformService, IAsyncService{
 		@Override
 		public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
 				ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-			if(ClazzUtil.isJtraceClass(loader, className)) {
+			if(ClazzUtil.isExcludes(loader, className)) {
 				return null;
 			}
-			
+
 			byte[] tempClassfileBuffer = classfileBuffer;
 			
 			try {
@@ -295,20 +321,22 @@ public class TransformService implements ITransformService, IAsyncService{
 				Set<Map.Entry<Integer, ITransformerMatcher>> entries = transformers.entrySet();
 				for(Map.Entry<Integer, ITransformerMatcher> entry: entries) {
 					ITransformerMatcher transformerMatcher = entry.getValue();
-					ITransformer transformer = transformerMatcher.matchedTransformer(classTree);
-					if(transformer == null) {
-						continue;
-					}
+					try {
+						ITransformer transformer = transformerMatcher.matchedTransformer(classTree);
+						if (transformer == null) {
+							continue;
+						}
 
-					byte[] bytes = transformer.transform(loader, classTree, classBeingRedefined, protectionDomain, tempClassfileBuffer);
-					if (bytes != null) {
-						tempClassfileBuffer = bytes;
+						byte[] bytes = transformer.transform(loader, classTree, classBeingRedefined, protectionDomain, tempClassfileBuffer);
+						if (bytes != null) {
+							tempClassfileBuffer = bytes;
+						}
+					}catch (ClassMatchException e){
+						log.warn("Failed to get matched transformer for " + className+" from " + transformerMatcher, e);
 					}
 				}
 			}catch (TransformException e){
 				log.warn("Failed to transform class " + className, e);
-			}catch (ClassMatchException e){
-				log.warn("Failed to get matched transformer for " + className, e);
 			}catch(ClassFinderException e) {
 				log.warn("Failed to get class finder for " + className, e);
 			}catch(Throwable e) {
@@ -336,7 +364,7 @@ public class TransformService implements ITransformService, IAsyncService{
 						out.write(tempClassfileBuffer);
 						out.flush();
 						out.close();
-					}catch(Exception e) {
+					}catch(Throwable e) {
 						log.warn("writing class out failed " + className,e);
 					}
 				}

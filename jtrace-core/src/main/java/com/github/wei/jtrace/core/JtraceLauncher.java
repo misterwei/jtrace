@@ -21,6 +21,7 @@ import com.github.wei.jtrace.core.resource.SearchResourceCommand;
 import com.github.wei.jtrace.core.service.ServiceManager;
 import com.github.wei.jtrace.core.transform.MatchAndRestoreService;
 import com.github.wei.jtrace.core.transform.TransformService;
+import com.github.wei.jtrace.core.transform.command.RefreshClassCommand;
 import com.github.wei.jtrace.core.transform.command.RemoveTransformerCommand;
 import com.github.wei.jtrace.core.transform.command.RestoreClassCommand;
 import com.github.wei.jtrace.core.transform.command.ShowAllTransformerCommand;
@@ -85,6 +86,7 @@ public class JtraceLauncher {
 		beanFactory.registBean(ClassLoaderTreeCommand.class);
 		
 		//match and weave
+		beanFactory.registBean(RefreshClassCommand.class);
 		beanFactory.registBean(RestoreClassCommand.class);
 		beanFactory.registBean(ShowAllTransformerCommand.class);
 		beanFactory.registBean(RemoveTransformerCommand.class);
