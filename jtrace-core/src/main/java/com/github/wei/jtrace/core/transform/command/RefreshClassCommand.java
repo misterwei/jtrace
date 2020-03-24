@@ -48,7 +48,7 @@ public class RefreshClassCommand implements ICommand{
 	
 	@Override
 	public String introduction() {
-		return "删除对应的Transformer，并且恢复原始Class";
+		return "刷新Class";
 	}
 
 	@Override
